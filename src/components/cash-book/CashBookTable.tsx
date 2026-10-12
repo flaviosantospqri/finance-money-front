@@ -77,7 +77,7 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
   return (
     <section className="panel cash-book-table-panel" aria-busy={isRefreshing || isReordering}>
       <div className="cash-book-table-heading">
-        <div><h2>Movimentações</h2><p>Ordem padrão por criação; saldo calculado pela data da movimentação.</p></div>
+        <div><h2>Movimentações</h2><p>Ordem padrão por criação; saldo recalculado conforme a ordem exibida.</p></div>
         <div className="cash-book-table-status-area">
           {(isRefreshing || isReordering) && <span className="cash-book-request-status" role="status" aria-live="polite"><span className="loading-spinner" />{isReordering ? 'Salvando ordem…' : 'Atualizando movimentações…'}</span>}
           {!isRefreshing && !isReordering && canReorder && entries.length > 1 && <span className="cash-book-reorder-hint">Arraste pelo ⠿ para reorganizar</span>}
