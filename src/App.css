@@ -362,6 +362,9 @@ button { color: inherit; }
 .cash-book-table td { height: 58px; }
 .cash-book-table .description-cell strong { max-width: 320px; }
 .cash-book-table-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cash-book-table-status-area { min-height: 20px; display: flex; align-items: center; justify-content: flex-end; }
+.cash-book-request-status { display: inline-flex; align-items: center; gap: 8px; color: var(--text-soft); font-size: 11px; white-space: nowrap; }
+.cash-book-request-status .loading-spinner { width: 14px; height: 14px; flex: 0 0 14px; }
 .cash-book-reorder-hint { color: var(--text-soft); font-size: 11px; white-space: nowrap; }
 .cash-book-table th:first-child { padding-left: 44px !important; }
 .cash-book-table td.cash-book-date-with-handle { position: relative; display: table-cell; padding-left: 44px !important; }

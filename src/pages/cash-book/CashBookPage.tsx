@@ -85,6 +85,7 @@ export function CashBookPage() {
   const [pageData, setPageData] = useState<CashBookPageResult | null>(null);
   const [referenceLoading, setReferenceLoading] = useState(true);
   const [loadedQuery, setLoadedQuery] = useState("");
+  const [loadedContextKey, setLoadedContextKey] = useState("");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
@@ -102,7 +103,7 @@ export function CashBookPage() {
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [reordering, setReordering] = useState(false);
-  const queryKey = [
+  const queryContextKey = [
     accountId,
     month,
     page,
@@ -111,8 +112,8 @@ export function CashBookPage() {
     categoryId,
     fromDate,
     toDate,
-    refreshKey,
   ].join("|");
+  const queryKey = `${queryContextKey}|${refreshKey}`;
   const [monthYear, monthNumber] = month.split("-").map(Number);
   const monthEndDate = `${month}-${String(new Date(monthYear, monthNumber, 0).getDate()).padStart(2, "0")}`;
 
@@ -183,6 +184,7 @@ export function CashBookPage() {
         setSummary(loadedSummary);
         setPageData(loadedPage);
         setLoadedQuery(queryKey);
+        setLoadedContextKey(queryContextKey);
         setError("");
       })
       .catch((reason: unknown) => {
@@ -206,6 +208,7 @@ export function CashBookPage() {
     refreshKey,
     referenceLoading,
     queryKey,
+    queryContextKey,
   ]);
 
   async function saveEntry(input: CashBookFormData) {
@@ -345,19 +348,26 @@ export function CashBookPage() {
 
   async function reorderEntries(orderedEntryIds: string[]) {
     if (!pageData || !accountId) return;
+    const previousPage = pageData;
+    const entriesById = new Map(pageData.entries.map((entry) => [entry.id, entry]));
+    setPageData({ ...pageData, entries: orderedEntryIds.flatMap((id) => {
+      const entry = entriesById.get(id);
+      return entry ? [entry] : [];
+    }) });
     setReordering(true);
     try {
       await cashBookApi.reorderEntries({ accountId, month, page, pageSize: pageData.pagination.pageSize, orderedEntryIds });
-      setRefreshKey((current) => current + 1);
       toast.success("Ordem das movimentações atualizada.");
     } catch (reason) {
+      setPageData(previousPage);
       toast.error(reason instanceof Error ? reason.message : "Não foi possível alterar a ordem.");
     } finally {
       setReordering(false);
+      setRefreshKey((current) => current + 1);
     }
   }
 
-  const canReorder = !search.trim() && !type && !categoryId && !fromDate && !toDate && !reordering;
+  const canReorder = !search.trim() && !type && !categoryId && !fromDate && !toDate;
 
   return (
     <main className="page-content cash-book-page">
@@ -526,7 +536,7 @@ export function CashBookPage() {
       )}
       {!referenceLoading &&
         accounts.length > 0 &&
-        loadedQuery !== queryKey &&
+        loadedContextKey !== queryContextKey &&
         !error && (
           <div className="cash-book-state">
             <span className="loading-spinner" />
@@ -535,7 +545,7 @@ export function CashBookPage() {
         )}
       {!referenceLoading &&
         accounts.length > 0 &&
-        loadedQuery === queryKey &&
+        loadedContextKey === queryContextKey &&
         summary &&
         pageData && (
           <CashBookTable
@@ -546,6 +556,8 @@ export function CashBookPage() {
             onEdit={(entry) => setDrawer({ mode: "edit", entry })}
             onDelete={setPendingDelete}
             canReorder={canReorder}
+            isReordering={reordering}
+            isRefreshing={loadedQuery !== queryKey}
             onReorder={(ids) => void reorderEntries(ids)}
           />
         )}

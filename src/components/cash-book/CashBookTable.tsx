@@ -14,6 +14,8 @@ type CashBookTableProps = {
   onEdit: (entry: CashBookEntry) => void
   onDelete: (entry: CashBookEntry) => void
   canReorder: boolean
+  isReordering: boolean
+  isRefreshing: boolean
   onReorder: (ids: string[]) => void
 }
 
@@ -23,14 +25,15 @@ function entryTypeLabel(entry: CashBookEntry) {
   return entry.categoryName ?? '—'
 }
 
-function SortableEntryRow({ entry, canReorder, onView, onEdit, onDelete }: {
+function SortableEntryRow({ entry, canReorder, isBusy, onView, onEdit, onDelete }: {
   entry: CashBookEntry
   canReorder: boolean
+  isBusy: boolean
   onView: (entry: CashBookEntry) => void
   onEdit: (entry: CashBookEntry) => void
   onDelete: (entry: CashBookEntry) => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id, disabled: !canReorder })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id, disabled: !canReorder || isBusy })
   const isIncome = entry.type === 'income' || entry.type === 'transfer_credit'
   const isTransfer = entry.type.startsWith('transfer_')
   return (
@@ -56,7 +59,7 @@ function SortableEntryRow({ entry, canReorder, onView, onEdit, onDelete }: {
   )
 }
 
-export function CashBookTable({ entries, pagination, onPageChange, onView, onEdit, onDelete, canReorder, onReorder }: CashBookTableProps) {
+export function CashBookTable({ entries, pagination, onPageChange, onView, onEdit, onDelete, canReorder, isReordering, isRefreshing, onReorder }: CashBookTableProps) {
   const [dragging, setDragging] = useState(false)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -72,10 +75,13 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
     onReorder(arrayMove(entries, oldIndex, newIndex).map((entry) => entry.id))
   }
   return (
-    <section className="panel cash-book-table-panel">
+    <section className="panel cash-book-table-panel" aria-busy={isRefreshing || isReordering}>
       <div className="cash-book-table-heading">
         <div><h2>Movimentações</h2><p>Ordem padrão por criação; saldo calculado pela data da movimentação.</p></div>
-        {canReorder && entries.length > 1 && <span className="cash-book-reorder-hint">Arraste pelo ⠿ para reorganizar</span>}
+        <div className="cash-book-table-status-area">
+          {(isRefreshing || isReordering) && <span className="cash-book-request-status" role="status" aria-live="polite"><span className="loading-spinner" />{isReordering ? 'Salvando ordem…' : 'Atualizando movimentações…'}</span>}
+          {!isRefreshing && !isReordering && canReorder && entries.length > 1 && <span className="cash-book-reorder-hint">Arraste pelo ⠿ para reorganizar</span>}
+        </div>
       </div>
       <div className="table-scroll">
         <table className="transactions-table cash-book-table">
@@ -83,7 +89,7 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragCancel={() => setDragging(false)} onDragEnd={finishDrag}>
             <SortableContext items={entries.map((entry) => entry.id)} strategy={verticalListSortingStrategy}>
               <tbody className={dragging ? 'cash-book-dragging' : ''}>
-                {entries.map((entry) => <SortableEntryRow key={entry.id} entry={entry} canReorder={canReorder} onView={onView} onEdit={onEdit} onDelete={onDelete} />)}
+                {entries.map((entry) => <SortableEntryRow key={entry.id} entry={entry} canReorder={canReorder} isBusy={isRefreshing || isReordering} onView={onView} onEdit={onEdit} onDelete={onDelete} />)}
                 {entries.length === 0 && <tr><td className="empty-table" colSpan={7}>Nenhuma movimentação encontrada para esta conta e competência.</td></tr>}
               </tbody>
             </SortableContext>
