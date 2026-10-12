@@ -4,7 +4,7 @@ export type IconName =
   | 'dashboard' | 'cash' | 'investments' | 'closing' | 'reports' | 'settings'
   | 'calendar' | 'sun' | 'moon' | 'plus' | 'sparkle' | 'wallet' | 'trend'
   | 'arrow-up' | 'arrow-down' | 'eye' | 'edit' | 'trash' | 'copy' | 'check'
-  | 'chevron' | 'chevron-left' | 'chevron-right' | 'close' | 'bank' | 'logout' | 'menu' | 'panel-collapse' | 'panel-expand' | 'book'
+  | 'chevron' | 'chevron-left' | 'chevron-right' | 'close' | 'bank' | 'logout' | 'menu' | 'panel-collapse' | 'panel-expand' | 'book' | 'lock' | 'unlock'
 
 const paths: Record<IconName, ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
@@ -37,6 +37,8 @@ const paths: Record<IconName, ReactNode> = {
   'panel-collapse': <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m10-8h-6m0 0 3-3m-3 3 3 3" /></>,
   'panel-expand': <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m4-8h6m0 0-3-3m3 3-3 3" /></>,
   book: <><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v18H7.5A2.5 2.5 0 0 0 5 22V4.5Z" /><path d="M5 5H3v15h2m5-13h7m-7 4h7" /></>,
+  lock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>,
+  unlock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 7.5-2" /></>,
 }
 
 export function Icon({ name, size = 18, className }: { name: IconName; size?: number; className?: string }) {
