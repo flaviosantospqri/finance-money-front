@@ -351,9 +351,10 @@ button { color: inherit; }
 .cash-book-table-heading { padding: 16px 18px 12px; }
 .cash-book-table-heading h2 { margin: 0; color: var(--text); font-size: 16px; }
 .cash-book-table-heading p { margin: 4px 0 0; color: var(--text-soft); font-size: 12px; }
-.cash-book-table { min-width: 960px; }
-.cash-book-table-scroll { max-height: max(180px, calc(100vh - 420px)); overflow: auto; overscroll-behavior: contain; scrollbar-color: var(--panel-border) transparent; scrollbar-width: thin; }
-.cash-book-table-scroll .cash-book-table thead th { position: sticky; top: 0; z-index: 2; }
+.cash-book-table { min-width: 960px; border-collapse: separate; border-spacing: 0; }
+.cash-book-table-scroll { position: relative; isolation: isolate; max-height: max(180px, calc(100vh - 420px)); overflow: auto; overscroll-behavior: contain; scrollbar-color: var(--panel-border) transparent; scrollbar-width: thin; }
+.cash-book-table-scroll .cash-book-table thead { position: sticky; top: 0; z-index: 3; background: var(--table-head); }
+.cash-book-table-scroll .cash-book-table thead th { position: static; background: var(--table-head); background-clip: padding-box; box-shadow: inset 0 -1px var(--panel-border); }
 .cash-book-table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .cash-book-table-scroll::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 99px; background: var(--panel-border); background-clip: content-box; }
 .cash-book-table th { height: 42px; }
