@@ -18,6 +18,8 @@ export type FinancialCategory = {
   name: string;
   nature: CategoryNature;
   active: boolean;
+  destinationId: string;
+  destinationName: string;
 };
 
 export type CashBookEntry = {
@@ -27,6 +29,7 @@ export type CashBookEntry = {
   accountName: string;
   categoryId: string | null;
   categoryName: string | null;
+  destinationName?: string | null;
   type: CashBookType;
   occurredAt: string;
   description: string;
@@ -132,9 +135,18 @@ export const cashBookApi = {
   }),
   getCategories: () =>
     request<FinancialCategory[]>("/financial-categories?active=true"),
-  createCategory: (input: { name: string; nature: CategoryNature }) =>
+  getAllCategories: () =>
+    request<FinancialCategory[]>("/financial-categories"),
+  getDestinations: () =>
+    request<{ id: string; name: string; active: boolean }[]>("/financial-forecasts/destinations"),
+  createCategory: (input: { name: string; nature: CategoryNature; destinationId: string }) =>
     request<FinancialCategory>("/financial-categories", {
       method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateCategory: (id: string, input: { destinationId: string }) =>
+    request<FinancialCategory>(`/financial-categories/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
   getEntries: (filters: {

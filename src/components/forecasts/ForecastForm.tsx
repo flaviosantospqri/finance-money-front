@@ -7,11 +7,7 @@ import type {
   FinancialAccount,
   FinancialCategory,
 } from '../../features/cash-book/cashBookApi';
-import type {
-  Destination,
-  Forecast,
-  ForecastInput,
-} from '../../features/forecasts/forecastsApi';
+import type { Forecast, ForecastInput } from '../../features/forecasts/forecastsApi';
 import { currentDate, normalizeMoney } from './forecastUtils';
 
 export function ForecastForm({
@@ -19,7 +15,6 @@ export function ForecastForm({
   scope,
   accounts,
   categories,
-  destinations,
   busy,
   onClose,
   onSave,
@@ -28,7 +23,6 @@ export function ForecastForm({
   scope: 'occurrence' | 'future';
   accounts: FinancialAccount[];
   categories: FinancialCategory[];
-  destinations: Destination[];
   busy: boolean;
   onClose: () => void;
   onSave: (
@@ -54,6 +48,7 @@ export function ForecastForm({
     [editScope, setEditScope] = useState<'occurrence' | 'future'>(scope),
     [error, setError] = useState('');
   const choices = categories.filter((c) => c.nature === kind && c.active);
+  const selectedCategory = choices.find((category) => category.id === categoryId);
   async function submit(event: FormEvent) {
     event.preventDefault();
     const normalized = normalizeMoney(amount);
@@ -74,7 +69,7 @@ export function ForecastForm({
         dueDate,
         categoryId,
         accountId: accountId || undefined,
-        destinationId: destinationId || undefined,
+        destinationId: kind === 'expense' ? selectedCategory?.destinationId : destinationId || undefined,
         recurrence,
         occurrenceCount: recurrence === 'once' ? 1 : occurrenceCount,
         notes: notes.trim() || undefined,
@@ -152,17 +147,18 @@ export function ForecastForm({
             </label>
             <label className="form-field">
               <span>Categoria</span>
-              <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={choices.map((category) => ({ value: category.id, label: category.name }))} onValueChange={setCategoryId} />
+              <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={choices.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))} onValueChange={(value) => {
+                setCategoryId(value);
+                const selected = choices.find((category) => category.id === value);
+                if (selected) setDestinationId(selected.destinationId);
+              }} />
             </label>
             <label className="form-field">
               <span>Conta prevista (opcional)</span>
               <SelectField ariaLabel="Conta prevista" value={accountId} options={[{ value: '', label: 'Sem conta definida' }, ...accounts.map((account) => ({ value: account.id, label: account.name }))]} onValueChange={setAccountId} />
             </label>
-            {kind === 'expense' && (
-              <label className="form-field">
-                <span>Destinação planejada (opcional)</span>
-                <SelectField ariaLabel="Destinação planejada" value={destinationId} options={[{ value: '', label: 'Sem destinação' }, ...destinations.map((destination) => ({ value: destination.id, label: destination.name }))]} onValueChange={setDestinationId} />
-              </label>
+            {kind === 'expense' && selectedCategory && (
+              <p className="cash-book-feedback">Esta despesa será acompanhada no repasse <strong>{selectedCategory.destinationName}</strong>.</p>
             )}
             {!item && (
               <>

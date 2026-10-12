@@ -8,7 +8,6 @@ import { ForecastForm } from '../../components/forecasts/ForecastForm';
 import { ForecastTable } from '../../components/forecasts/ForecastTable';
 import {
   forecastsApi,
-  type Destination,
   type Distribution,
   type Forecast,
   type ForecastDetails,
@@ -32,8 +31,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [summary, setSummary] = useState<ForecastSummary | null>(null);
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]),
     [categories, setCategories] = useState<FinancialCategory[]>([]);
-  const [destinations, setDestinations] = useState<Destination[]>([]),
-    [distribution, setDistribution] = useState<Distribution[]>([]);
+  const [distribution, setDistribution] = useState<Distribution[]>([]);
   const [form, setForm] = useState<FormState>(null),
     [details, setDetails] = useState<ForecastDetails | null>(null),
     [matches, setMatches] = useState<
@@ -59,7 +57,6 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         totals,
         accountsData,
         categoriesData,
-        destData,
         distributionData,
       ] = await Promise.all([
         forecastsApi.getAll({
@@ -71,14 +68,12 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         forecastsApi.summary(month),
         forecastsApi.getAccounts(),
         forecastsApi.getCategories(),
-        forecastsApi.destinations(),
         forecastsApi.distributions(month),
       ]);
       setItems(rows);
       setSummary(totals);
       setAccounts(accountsData);
       setCategories(categoriesData);
-      setDestinations(destData);
       setDistribution(distributionData);
     } catch (reason) {
       setError(
@@ -269,7 +264,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         </label>
         <label className="filter-select">
           <span>Categoria</span>
-          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={setCategoryId} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} />
+          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={setCategoryId} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))]} />
         </label>
         <label className="filter-select">
           <span>Situação</span>
@@ -360,7 +355,6 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           scope={form.scope}
           accounts={accounts}
           categories={categories}
-          destinations={destinations}
           busy={busy}
           onClose={() => setForm(null)}
           onSave={save}

@@ -120,7 +120,7 @@ export function ForecastTable({
                             : item.accountName || 'Conta não definida'}
                         </small>
                       </td>
-                      <td>{item.categoryName}</td>
+                      <td className="description-cell"><strong>{item.categoryName}</strong><small>{item.categoryDestinationName}</small></td>
                       <td>{formatCurrencyDecimal(item.amount)}</td>
                       <td>{formatCurrencyDecimal(item.realized)}</td>
                       <td>{formatCurrencyDecimal(item.pending)}</td>

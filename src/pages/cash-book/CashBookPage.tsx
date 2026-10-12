@@ -8,6 +8,7 @@ import { CashBookTable } from "../../components/cash-book/CashBookTable";
 import { FinancialAccountDialog } from "../../components/cash-book/FinancialAccountDialog";
 import { FinancialAccountsManagerDialog } from "../../components/cash-book/FinancialAccountsManagerDialog";
 import { FinancialCategoryDialog } from "../../components/cash-book/FinancialCategoryDialog";
+import { FinancialCategoriesManagerDialog } from "../../components/cash-book/FinancialCategoriesManagerDialog";
 import { cashBookApi } from "../../features/cash-book/cashBookApi";
 import type {
   CashBookEntry,
@@ -78,6 +79,7 @@ export function CashBookPage() {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [applications, setApplications] = useState<InvestmentApplication[]>([]);
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
+  const [destinations, setDestinations] = useState<{ id: string; name: string; active: boolean }[]>([]);
   const [accountId, setAccountId] = useState("");
   const [summary, setSummary] = useState<CashBookSummary | null>(null);
   const [pageData, setPageData] = useState<CashBookPageResult | null>(null);
@@ -97,6 +99,7 @@ export function CashBookPage() {
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [showAccountManager, setShowAccountManager] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const queryKey = [
     accountId,
@@ -113,12 +116,14 @@ export function CashBookPage() {
   const monthEndDate = `${month}-${String(new Date(monthYear, monthNumber, 0).getDate()).padStart(2, "0")}`;
 
   const reloadReferenceData = useCallback(async () => {
-    const [loadedAccounts, loadedCategories] = await Promise.all([
+    const [loadedAccounts, loadedCategories, loadedDestinations] = await Promise.all([
       cashBookApi.getAccounts(),
       cashBookApi.getCategories(),
+      cashBookApi.getDestinations(),
     ]);
     setAccounts(loadedAccounts);
     setCategories(loadedCategories);
+    setDestinations(loadedDestinations);
     setAccountId((current) => loadedAccounts.some((account) => account.id === current) ? current : loadedAccounts[0]?.id || "");
   }, []);
 
@@ -127,12 +132,14 @@ export function CashBookPage() {
     Promise.all([
       cashBookApi.getAccounts(),
       cashBookApi.getCategories(),
+      cashBookApi.getDestinations(),
       investmentsApi.getApplications(),
     ])
-      .then(([loadedAccounts, loadedCategories, loadedApplications]) => {
+      .then(([loadedAccounts, loadedCategories, loadedDestinations, loadedApplications]) => {
         if (!active) return;
         setAccounts(loadedAccounts);
         setCategories(loadedCategories);
+        setDestinations(loadedDestinations);
         setApplications(loadedApplications);
         setAccountId((current) => current || loadedAccounts[0]?.id || "");
       })
@@ -274,11 +281,19 @@ export function CashBookPage() {
   async function createCategory(input: {
     name: string;
     nature: "income" | "expense";
+    destinationId: string;
   }) {
     await cashBookApi.createCategory(input);
     setShowCategoryDialog(false);
     await reloadReferenceData();
     toast.success("Categoria cadastrada.");
+  }
+
+  async function saveCategoryRepasse(changes: { id: string; destinationId: string }[]) {
+    await Promise.all(changes.map(({ id, destinationId }) => cashBookApi.updateCategory(id, { destinationId })));
+    await reloadReferenceData();
+    setRefreshKey((current) => current + 1);
+    toast.success("Vínculos de repasse atualizados.");
   }
 
   function setFilterDate(kind: "from" | "to", value: string) {
@@ -373,6 +388,12 @@ export function CashBookPage() {
           Categoria
         </button>
         <button
+          className="secondary-button"
+          onClick={() => setShowCategoriesManager(true)}
+        >
+          Gerenciar categorias
+        </button>
+        <button
           className="primary-button"
           onClick={() => setDrawer({ mode: "create", entry: null })}
         >
@@ -454,7 +475,7 @@ export function CashBookPage() {
         </label>
         <label className="filter-select">
           <span>Categoria</span>
-          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={(value) => { setCategoryId(value); setPage(1); }} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name === 'Outros' ? `Outros (${category.nature === 'income' ? 'receita' : 'despesa'})` : category.name }))]} />
+          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={(value) => { setCategoryId(value); setPage(1); }} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))]} />
         </label>
         <button className="cash-book-clear-filters" onClick={clearFilters}>
           Limpar filtros
@@ -518,6 +539,7 @@ export function CashBookPage() {
           accounts={accounts}
           applications={applications}
           defaultAccountId={accountId}
+          defaultDate={`${month}-01`}
           categories={categories}
           onClose={() => setDrawer(null)}
           onSave={saveEntry}
@@ -537,8 +559,17 @@ export function CashBookPage() {
       )}
       {showCategoryDialog && (
         <FinancialCategoryDialog
+          destinations={destinations.filter((destination) => destination.active)}
           onClose={() => setShowCategoryDialog(false)}
           onSave={createCategory}
+        />
+      )}
+      {showCategoriesManager && (
+        <FinancialCategoriesManagerDialog
+          categories={categories}
+          destinations={destinations}
+          onClose={() => setShowCategoriesManager(false)}
+          onSave={saveCategoryRepasse}
         />
       )}
       {pendingDelete && (

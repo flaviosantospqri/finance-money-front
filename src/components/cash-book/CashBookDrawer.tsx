@@ -32,6 +32,7 @@ type CashBookDrawerProps = {
   accounts: FinancialAccount[];
   applications: InvestmentApplication[];
   defaultAccountId: string;
+  defaultDate: string;
   categories: FinancialCategory[];
   onClose: () => void;
   onSave: (input: CashBookFormData) => Promise<void>;
@@ -59,6 +60,7 @@ export function CashBookDrawer({
   accounts,
   applications,
   defaultAccountId,
+  defaultDate,
   categories,
   onClose,
   onSave,
@@ -75,7 +77,7 @@ export function CashBookDrawer({
   const [type, setType] = useState<"income" | "expense" | "transfer">(
     initialType,
   );
-  const [occurredAt, setOccurredAt] = useState(entry?.occurredAt ?? today());
+  const [occurredAt, setOccurredAt] = useState(entry?.occurredAt ?? defaultDate ?? today());
   const [description, setDescription] = useState(entry?.description ?? "");
   const [amount, setAmount] = useState(entry ? toInputMoney(entry.amount) : "");
   const [accountId, setAccountId] = useState(
@@ -356,7 +358,7 @@ export function CashBookDrawer({
                 </label>
                 <label className="form-field">
                   <span>Categoria</span>
-                  <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={matchingCategories.map((category) => ({ value: category.id, label: category.name }))} onValueChange={setCategoryId} />
+                  <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={matchingCategories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))} onValueChange={setCategoryId} />
                 </label>
               </>
             )}

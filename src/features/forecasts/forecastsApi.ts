@@ -14,6 +14,7 @@ export type Forecast = {
   dueDate: string;
   categoryId: string;
   categoryName: string;
+  categoryDestinationName: string;
   accountId: string | null;
   accountName: string | null;
   destinationId: string | null;

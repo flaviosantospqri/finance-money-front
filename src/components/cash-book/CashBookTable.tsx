@@ -25,7 +25,7 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
       </div>
       <div className="table-scroll">
         <table className="transactions-table cash-book-table">
-          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Entrada</th><th>Saída</th><th className="cash-book-balance-heading">Saldo</th><th className="actions-heading-cell">Ações</th></tr></thead>
+          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria / repasse</th><th className="cash-book-money-heading">Entrada</th><th className="cash-book-money-heading">Saída</th><th className="cash-book-balance-heading">Saldo</th><th className="actions-heading-cell">Ações</th></tr></thead>
           <tbody>
             {entries.map((entry) => {
               const isIncome = entry.type === 'income' || entry.type === 'transfer_credit'
@@ -34,7 +34,10 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
                 <tr key={entry.id}>
                   <td className="date-cell"><strong>{formatDate(entry.occurredAt)}</strong></td>
                   <td className="description-cell"><strong>{entry.description}</strong>{isTransfer && <small>{entryTypeLabel(entry)}</small>}</td>
-                  <td><span className={isTransfer ? 'cash-book-transfer-chip' : 'category-chip'}>{isTransfer ? 'Transferência' : entryTypeLabel(entry)}</span></td>
+                  <td className="cash-book-category-cell">
+                    <span className={isTransfer ? 'cash-book-transfer-chip' : 'category-chip'}>{isTransfer ? 'Transferência' : entryTypeLabel(entry)}</span>
+                    {!isTransfer && entry.destinationName && <small>{entry.destinationName}</small>}
+                  </td>
                   <td className="cash-book-money income">{isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
                   <td className="cash-book-money expense">{!isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
                   <td className="cash-book-money balance">{entry.balance ? formatCurrencyDecimal(entry.balance) : '—'}</td>
