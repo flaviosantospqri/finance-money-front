@@ -17,15 +17,24 @@ const currentPeriod = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 const percentUnits = (value: string) => {
-  const [whole = '0', fraction = ''] = value.split('.');
+  const normalized = value.trim().replace(',', '.');
+  if (!/^\d*(?:\.\d*)?$/.test(normalized) || !/\d/.test(normalized)) return null;
+  const [whole = '0', fraction = ''] = normalized.split('.');
   return BigInt(whole || '0') * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2));
 };
 const percentText = (value: bigint) => `${value / 100n}.${(value % 100n).toString().padStart(2, '0')}`;
+const normalizedPercentage = (value: string) => {
+  const units = percentUnits(value);
+  return percentText(units === null ? 0n : units > 10000n ? 10000n : units);
+};
 function refreshFlexibleRow(rows: Distribution[], flexibleId: string | null) {
   if (!flexibleId) return rows;
   const flexible = rows.find((row) => row.id === flexibleId && row.valueType === 'percentage');
   if (!flexible) return rows;
-  const pinnedTotal = rows.reduce((sum, row) => sum + (row.valueType === 'percentage' && row.id !== flexibleId ? percentUnits(row.value || '0') : 0n), 0n);
+  const pinnedTotal = rows.reduce((sum, row) => {
+    if (row.valueType !== 'percentage' || row.id === flexibleId) return sum;
+    return sum + (percentUnits(row.value) ?? 0n);
+  }, 0n);
   const value = percentText(pinnedTotal >= 10000n ? 0n : 10000n - pinnedTotal);
   return rows.map((row) => row.id === flexibleId ? { ...row, value, percentage: value } : row);
 }
@@ -99,11 +108,8 @@ export function RepassesPage({ month, onMonthChange }: Props) {
   }
 
   function updateDistributionPercentage(id: string, rawValue: string) {
-    const numeric = Number(rawValue);
-    if (!Number.isFinite(numeric) || numeric < 0) return;
-    const value = percentText(percentUnits(Math.min(100, numeric).toFixed(2)));
     setDistribution((current) => refreshFlexibleRow(
-      current.map((row) => row.id === id ? { ...row, value, percentage: value } : row),
+      current.map((row) => row.id === id ? { ...row, value: rawValue, percentage: rawValue } : row),
       flexibleDestinationId,
     ));
   }
@@ -123,7 +129,10 @@ export function RepassesPage({ month, onMonthChange }: Props) {
     if (nextFlexibleId) setDistribution((current) => refreshFlexibleRow(current, nextFlexibleId));
   }
 
-  const percentageTotal = distribution.reduce((sum, row) => sum + (row.valueType === 'percentage' ? percentUnits(row.value || '0') : 0n), 0n);
+  const percentageTotal = distribution.reduce((sum, row) => {
+    if (row.valueType !== 'percentage') return sum;
+    return sum + (percentUnits(row.value) ?? 0n);
+  }, 0n);
   const hasFixedAmounts = distribution.some((row) => row.valueType === 'fixed');
   const distributionIsValid = hasFixedAmounts ? percentageTotal <= 10000n : percentageTotal === 10000n;
 
@@ -225,7 +234,14 @@ export function RepassesPage({ month, onMonthChange }: Props) {
                   <span>{row.name}</span>
                   <div>
                     <SelectField ariaLabel={`Tipo de repasse para ${row.name}`} value={row.valueType} disabled={distributionSaving} onValueChange={(value) => changeDistributionType(row.id, value as Distribution['valueType'])} options={[{ value: 'percentage', label: '%' }, { value: 'fixed', label: 'R$' }]} />
-                    <input aria-label={`Valor do repasse para ${row.name}`} type="number" min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.value} disabled={distributionSaving || (row.valueType === 'percentage' && flexibleDestinationId === row.id)} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} />
+                    <input aria-label={`Valor do repasse para ${row.name}`} type={row.valueType === 'percentage' ? 'text' : 'number'} inputMode={row.valueType === 'percentage' ? 'decimal' : undefined} min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.valueType === 'percentage' ? row.value.replace('.', ',') : row.value} disabled={distributionSaving || (row.valueType === 'percentage' && flexibleDestinationId === row.id)} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} onBlur={(event) => {
+                      if (row.valueType !== 'percentage' || flexibleDestinationId === row.id) return;
+                      const value = normalizedPercentage(event.target.value);
+                      setDistribution((current) => refreshFlexibleRow(
+                        current.map((item) => item.id === row.id ? { ...item, value, percentage: value } : item),
+                        flexibleDestinationId,
+                      ));
+                    }} />
                     <span>{row.valueType === 'percentage' ? '%' : 'R$'}</span>
                   </div>
                   {row.valueType === 'percentage' && <button type="button" className={`distribution-pin-button${flexibleDestinationId === row.id ? ' is-unpinned' : ''}`} aria-label={flexibleDestinationId === row.id ? `Fixar valor de ${row.name}` : `Desafixar ${row.name}; será o único percentual ajustado`} aria-pressed={flexibleDestinationId !== row.id} onClick={() => toggleFlexibleDestination(row.id)} disabled={distributionSaving} title={flexibleDestinationId === row.id ? 'Fixar este percentual' : 'Desafixar: este será o único percentual ajustado'}><Icon name={flexibleDestinationId === row.id ? 'unlock' : 'lock'} size={13} />{flexibleDestinationId === row.id ? 'Fixar valor' : 'Desafixar valor'}</button>}
