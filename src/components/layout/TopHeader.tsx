@@ -20,8 +20,8 @@ const pageTitles: Record<PageKey, { title: string; subtitle: string }> = {
     subtitle: 'Planeje receitas, despesas e compromissos futuros',
   },
   repasses: {
-    title: 'Repasses',
-    subtitle: 'Configure regras globais e vigências dos repasses',
+    title: 'Distribuição',
+    subtitle: 'Configure origens, categorias e percentuais de distribuição',
   },
   investments: {
     title: 'Investimentos',

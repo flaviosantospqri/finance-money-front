@@ -14,7 +14,7 @@ const navigation: { key: PageKey; label: string; icon: IconName }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
   { key: 'cash-book', label: 'Livro Caixa', icon: 'book' },
   { key: 'forecasts', label: 'Previsões', icon: 'calendar' },
-  { key: 'repasses', label: 'Repasses', icon: 'cash' },
+  { key: 'repasses', label: 'Distribuição', icon: 'cash' },
   { key: 'investments', label: 'Investimentos', icon: 'investments' },
   { key: 'closing', label: 'Fechamento Financeiro', icon: 'closing' },
   { key: 'reports', label: 'Relatórios', icon: 'reports' },

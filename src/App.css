@@ -413,6 +413,9 @@ button { color: inherit; }
 .financial-categories-list { min-height: 0; overflow: auto; border: 1px solid var(--panel-border); border-radius: 9px; }
 .financial-categories-list .transactions-table { min-width: 520px; }
 .financial-categories-list .transactions-table td { height: 50px; }
+.financial-categories-list .transactions-table { min-width: 860px; }
+.category-name-input { width: 150px; min-width: 110px; padding: 7px 8px; border: 1px solid var(--panel-border); border-radius: 7px; color: var(--text); background: var(--surface); font: inherit; }
+.category-hierarchy-parent { display: block; margin-top: 3px; color: var(--text-soft); font-size: 11px; }
 .financial-categories-dialog > .dialog-actions { margin-top: 16px; }
 .account-manager-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .account-manager-heading h2 { margin: 10px 0 5px; font-size: 19px; }

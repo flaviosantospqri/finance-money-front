@@ -16,6 +16,11 @@ const currentPeriod = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
+const percentUnits = (value: string) => {
+  const [whole = '0', fraction = ''] = value.split('.');
+  return BigInt(whole || '0') * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2));
+};
+const percentText = (value: bigint) => `${value / 100n}.${(value % 100n).toString().padStart(2, '0')}`;
 
 export function RepassesPage({ month, onMonthChange }: Props) {
   const [rows, setRows] = useState<FinancialRepasse[]>([]);
@@ -81,6 +86,51 @@ export function RepassesPage({ month, onMonthChange }: Props) {
 
   function updateForm<K extends keyof RepasseForm>(key: K, value: RepasseForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateDistributionPercentage(id: string, rawValue: string) {
+    const numeric = Number(rawValue);
+    if (!Number.isFinite(numeric) || numeric < 0) return;
+    const peers = distribution.filter((row) => row.id !== id && row.valueType === 'percentage');
+    const chosen = peers.length ? percentUnits(Math.min(100, numeric).toFixed(2)) : 10000n;
+    const peerTotal = peers.reduce((sum, row) => sum + percentUnits(row.value), 0n);
+    const remainder = 10000n - chosen;
+    let used = 0n;
+    const updates = peers.map((row) => {
+      const old = percentUnits(row.value);
+      const value = peerTotal ? old * remainder / peerTotal : peers.length ? remainder / BigInt(peers.length) : 0n;
+      used += value;
+      return { id: row.id, value };
+    });
+    if (updates.length) updates[updates.length - 1].value += remainder - used;
+    setDistribution((current) => current.map((row) => {
+      if (row.id === id) return { ...row, value: percentText(chosen), percentage: percentText(chosen) };
+      const update = updates.find((item) => item.id === row.id);
+      return update ? { ...row, value: percentText(update.value), percentage: percentText(update.value) } : row;
+    }));
+  }
+
+  function changeDistributionType(id: string, valueType: Distribution['valueType']) {
+    setDistribution((current) => {
+      const converted = current.map((row) => row.id === id ? { ...row, valueType, value: valueType === 'percentage' ? '0' : row.value, percentage: '0' } : row);
+      const peers = converted.filter((row) => row.valueType === 'percentage' && row.id !== id);
+      if (valueType === 'fixed') {
+        if (peers.length === 1) return converted.map((row) => row.id === peers[0].id ? { ...row, value: '100.00', percentage: '100.00' } : row);
+        return converted;
+      }
+      const total = peers.reduce((sum, row) => sum + percentUnits(row.value), 0n);
+      let used = 0n;
+      const updates = peers.map((row) => {
+        const scaled = total ? percentUnits(row.value) * 10000n / total : peers.length ? 10000n / BigInt(peers.length) : 0n;
+        used += scaled;
+        return { id: row.id, value: scaled };
+      });
+      if (updates.length) updates[updates.length - 1].value += 10000n - used;
+      return converted.map((row) => {
+        const update = updates.find((item) => item.id === row.id);
+        return update ? { ...row, value: percentText(update.value), percentage: percentText(update.value) } : row;
+      });
+    });
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -163,8 +213,8 @@ export function RepassesPage({ month, onMonthChange }: Props) {
   return (
     <main className="page-content repasses-page">
       <section className="panel repasses-intro">
-        <div><h2>Repasses</h2><p>Gerencie as destinações, as regras de vigência e a divisão planejada por competência em um só lugar.</p></div>
-        <button className="primary-button" onClick={startCreate}><Icon name="plus" size={16} /> Novo repasse</button>
+        <div><h2>Distribuição</h2><p>Gerencie as regras de destinação e os percentuais por competência em um só lugar.</p></div>
+        <button className="primary-button" onClick={startCreate}><Icon name="plus" size={16} /> Nova distribuição</button>
       </section>
 
       {error && !modalOpen && <div className="cash-book-error" role="alert">{error}</div>}
@@ -180,8 +230,8 @@ export function RepassesPage({ month, onMonthChange }: Props) {
                 <label key={row.id} className="distribution-card">
                   <span>{row.name}</span>
                   <div>
-                    <SelectField ariaLabel={`Tipo de repasse para ${row.name}`} value={row.valueType} disabled={distributionSaving} onValueChange={(value) => setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, valueType: value as Distribution['valueType'], percentage: value === 'percentage' ? item.value : '0' } : item))} options={[{ value: 'percentage', label: '%' }, { value: 'fixed', label: 'R$' }]} />
-                    <input aria-label={`Valor do repasse para ${row.name}`} type="number" min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.value} disabled={distributionSaving} onChange={(event) => setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: item.valueType === 'percentage' ? event.target.value : '0' } : item))} />
+                    <SelectField ariaLabel={`Tipo de repasse para ${row.name}`} value={row.valueType} disabled={distributionSaving} onValueChange={(value) => changeDistributionType(row.id, value as Distribution['valueType'])} options={[{ value: 'percentage', label: '%' }, { value: 'fixed', label: 'R$' }]} />
+                    <input aria-label={`Valor do repasse para ${row.name}`} type="number" min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.value} disabled={distributionSaving} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} />
                     <span>{row.valueType === 'percentage' ? '%' : 'R$'}</span>
                   </div>
                   <small>Orçamento {formatCurrencyDecimal(row.budget)} · Consumido {formatCurrencyDecimal(row.consumed)}</small>
@@ -225,7 +275,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
         <div className="modal-layer repasse-modal-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setModalOpen(false); }}>
           <section className="repasse-editor-modal" role="dialog" aria-modal="true" aria-labelledby="repasse-editor-title">
             <header className="repasse-modal-heading">
-              <div><h2 id="repasse-editor-title">{editing ? 'Editar regra de repasse' : 'Novo repasse'}</h2><p>{editing ? 'A alteração começa na vigência escolhida.' : 'A nova regra cria uma destinação própria para usar nas Previsões.'}</p></div>
+              <div><h2 id="repasse-editor-title">{editing ? 'Editar distribuição' : 'Nova distribuição'}</h2><p>{editing ? 'A alteração começa na vigência escolhida.' : 'O percentual será reajustado com as demais destinações para fechar em 100%.'}</p></div>
               <button className="icon-button" aria-label="Fechar" onClick={() => setModalOpen(false)} disabled={saving}><Icon name="close" size={17} /></button>
             </header>
             {error && <div className="cash-book-error" role="alert">{error}</div>}
@@ -242,7 +292,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
               <p className="repasse-form-note">Sem fim definido, a regra segue vigente até uma nova alteração. Meses anteriores permanecem preservados.</p>
               <div className="repasse-form-actions">
                 <button type="button" className="secondary-button" onClick={() => setModalOpen(false)} disabled={saving}>Cancelar</button>
-                <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Salvando…' : editing ? 'Salvar alteração' : 'Salvar repasse'}</button>
+                <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Salvando…' : editing ? 'Salvar alteração' : 'Salvar distribuição'}</button>
               </div>
             </form>
           </section>

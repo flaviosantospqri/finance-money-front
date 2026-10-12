@@ -264,7 +264,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         </label>
         <label className="filter-select">
           <span>Categoria</span>
-          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={setCategoryId} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))]} />
+          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={setCategoryId} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.parentCategoryName ? `${category.parentCategoryName} / ` : ""}${category.name}` }))]} />
         </label>
         <label className="filter-select">
           <span>Situação</span>

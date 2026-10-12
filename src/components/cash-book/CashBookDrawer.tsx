@@ -358,7 +358,7 @@ export function CashBookDrawer({
                 </label>
                 <label className="form-field">
                   <span>Categoria</span>
-                  <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={matchingCategories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))} onValueChange={setCategoryId} />
+                  <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={matchingCategories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.parentCategoryName ? `${category.parentCategoryName} / ` : ""}${category.name}` }))} onValueChange={setCategoryId} />
                 </label>
               </>
             )}

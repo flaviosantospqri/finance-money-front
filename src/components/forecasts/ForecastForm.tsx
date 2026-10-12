@@ -147,7 +147,7 @@ export function ForecastForm({
             </label>
             <label className="form-field">
               <span>Categoria</span>
-              <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={choices.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))} onValueChange={(value) => {
+              <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={choices.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.parentCategoryName ? `${category.parentCategoryName} / ` : ""}${category.name}` }))} onValueChange={(value) => {
                 setCategoryId(value);
                 const selected = choices.find((category) => category.id === value);
                 if (selected) setDestinationId(selected.destinationId);

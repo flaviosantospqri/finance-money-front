@@ -46,8 +46,8 @@ function SortableEntryRow({ entry, canReorder, isBusy, onView, onEdit, onDelete 
       </td>
       <td className="description-cell"><strong>{entry.description}</strong>{isTransfer && <small>{entryTypeLabel(entry)}</small>}</td>
       <td className="cash-book-category-cell">
-        <span className={isTransfer ? 'cash-book-transfer-chip' : 'category-chip'}>{isTransfer ? 'Transferência' : entryTypeLabel(entry)}</span>
-        {!isTransfer && entry.destinationName && <small>{entry.destinationName}</small>}
+        <span className={isTransfer ? 'cash-book-transfer-chip' : 'category-chip'}>{isTransfer ? 'Transferência' : entry.destinationName ?? 'Sem origem'}</span>
+        {!isTransfer && <small>{entry.categoryName ?? 'Sem categoria'}</small>}
       </td>
       <td className="cash-book-money income">{isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
       <td className="cash-book-money expense">{!isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>

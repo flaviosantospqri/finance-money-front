@@ -20,6 +20,8 @@ export type FinancialCategory = {
   active: boolean;
   destinationId: string;
   destinationName: string;
+  parentCategoryId?: string | null;
+  parentCategoryName?: string | null;
 };
 
 export type CashBookEntry = {
@@ -139,12 +141,12 @@ export const cashBookApi = {
     request<FinancialCategory[]>("/financial-categories"),
   getDestinations: () =>
     request<{ id: string; name: string; active: boolean }[]>("/financial-forecasts/destinations"),
-  createCategory: (input: { name: string; nature: CategoryNature; destinationId: string }) =>
+  createCategory: (input: { name: string; nature: CategoryNature; destinationId?: string; parentCategoryId?: string }) =>
     request<FinancialCategory>("/financial-categories", {
       method: "POST",
       body: JSON.stringify(input),
     }),
-  updateCategory: (id: string, input: { destinationId: string }) =>
+  updateCategory: (id: string, input: { destinationId?: string; parentCategoryId?: string | null; name?: string; active?: boolean }) =>
     request<FinancialCategory>(`/financial-categories/${id}`, {
       method: "PATCH",
       body: JSON.stringify(input),

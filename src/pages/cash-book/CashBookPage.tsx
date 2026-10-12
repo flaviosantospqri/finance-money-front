@@ -79,6 +79,7 @@ export function CashBookPage() {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [applications, setApplications] = useState<InvestmentApplication[]>([]);
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
+  const [managedCategories, setManagedCategories] = useState<FinancialCategory[]>([]);
   const [destinations, setDestinations] = useState<{ id: string; name: string; active: boolean }[]>([]);
   const [accountId, setAccountId] = useState("");
   const [summary, setSummary] = useState<CashBookSummary | null>(null);
@@ -288,7 +289,8 @@ export function CashBookPage() {
   async function createCategory(input: {
     name: string;
     nature: "income" | "expense";
-    destinationId: string;
+    destinationId?: string;
+    parentCategoryId?: string;
   }) {
     await cashBookApi.createCategory(input);
     setShowCategoryDialog(false);
@@ -296,11 +298,20 @@ export function CashBookPage() {
     toast.success("Categoria cadastrada.");
   }
 
-  async function saveCategoryRepasse(changes: { id: string; destinationId: string }[]) {
-    await Promise.all(changes.map(({ id, destinationId }) => cashBookApi.updateCategory(id, { destinationId })));
+  async function saveCategoryRepasse(changes: { id: string; destinationId?: string; parentCategoryId?: string | null; name?: string; active?: boolean }[]) {
+    await Promise.all(changes.map(({ id, ...input }) => cashBookApi.updateCategory(id, input)));
     await reloadReferenceData();
     setRefreshKey((current) => current + 1);
-    toast.success("Vínculos de repasse atualizados.");
+    toast.success("Categorias e subcategorias atualizadas.");
+  }
+
+  async function openCategoriesManager() {
+    try {
+      setManagedCategories(await cashBookApi.getAllCategories());
+      setShowCategoriesManager(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível carregar as categorias.");
+    }
   }
 
   function setFilterDate(kind: "from" | "to", value: string) {
@@ -415,11 +426,11 @@ export function CashBookPage() {
           onClick={() => setShowCategoryDialog(true)}
         >
           <Icon name="plus" size={15} />
-          Categoria
+          Nova categoria
         </button>
         <button
           className="secondary-button"
-          onClick={() => setShowCategoriesManager(true)}
+          onClick={() => void openCategoriesManager()}
         >
           Gerenciar categorias
         </button>
@@ -505,7 +516,7 @@ export function CashBookPage() {
         </label>
         <label className="filter-select">
           <span>Categoria</span>
-          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={(value) => { setCategoryId(value); setPage(1); }} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.name}` }))]} />
+          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={(value) => { setCategoryId(value); setPage(1); }} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: `${category.destinationName} · ${category.parentCategoryName ? `${category.parentCategoryName} / ` : ""}${category.name}` }))]} />
         </label>
         <button className="cash-book-clear-filters" onClick={clearFilters}>
           Limpar filtros
@@ -594,6 +605,7 @@ export function CashBookPage() {
       )}
       {showCategoryDialog && (
         <FinancialCategoryDialog
+          categories={managedCategories}
           destinations={destinations.filter((destination) => destination.active)}
           onClose={() => setShowCategoryDialog(false)}
           onSave={createCategory}
