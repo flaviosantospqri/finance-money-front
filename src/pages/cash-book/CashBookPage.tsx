@@ -101,6 +101,7 @@ export function CashBookPage() {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [reordering, setReordering] = useState(false);
   const queryKey = [
     accountId,
     month,
@@ -342,6 +343,22 @@ export function CashBookPage() {
     setPage(1);
   }
 
+  async function reorderEntries(orderedEntryIds: string[]) {
+    if (!pageData || !accountId) return;
+    setReordering(true);
+    try {
+      await cashBookApi.reorderEntries({ accountId, month, page, pageSize: pageData.pagination.pageSize, orderedEntryIds });
+      setRefreshKey((current) => current + 1);
+      toast.success("Ordem das movimentações atualizada.");
+    } catch (reason) {
+      toast.error(reason instanceof Error ? reason.message : "Não foi possível alterar a ordem.");
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  const canReorder = !search.trim() && !type && !categoryId && !fromDate && !toDate && !reordering;
+
   return (
     <main className="page-content cash-book-page">
       <section className="cash-book-toolbar">
@@ -528,6 +545,8 @@ export function CashBookPage() {
             onView={(entry) => setDrawer({ mode: "view", entry })}
             onEdit={(entry) => setDrawer({ mode: "edit", entry })}
             onDelete={setPendingDelete}
+            canReorder={canReorder}
+            onReorder={(ids) => void reorderEntries(ids)}
           />
         )}
 

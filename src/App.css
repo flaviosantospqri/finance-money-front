@@ -361,6 +361,14 @@ button { color: inherit; }
 .cash-book-table:not(.forecasts-table):not(.investment-evolution-table) th:nth-child(7) { width: 10%; }
 .cash-book-table td { height: 58px; }
 .cash-book-table .description-cell strong { max-width: 320px; }
+.cash-book-table-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cash-book-reorder-hint { color: var(--text-soft); font-size: 11px; white-space: nowrap; }
+.cash-book-date-with-handle { display: flex; align-items: center; gap: 8px; }
+.cash-book-drag-handle, .cash-book-drag-spacer { display: inline-flex; flex: 0 0 16px; width: 16px; align-items: center; justify-content: center; }
+.cash-book-drag-handle { height: 28px; padding: 0; border: 0; border-radius: 5px; color: var(--text-soft); background: transparent; cursor: grab; font-size: 18px; line-height: 1; touch-action: none; }
+.cash-book-drag-handle:hover { color: var(--text); background: var(--table-head); }
+.cash-book-drag-handle:active { cursor: grabbing; }
+.cash-book-dragging tr { transition: background-color 120ms ease; }
 .cash-book-transfer-chip { display: inline-block; max-width: 220px; overflow: hidden; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-soft); background: var(--surface-muted); font-size: 12px; text-overflow: ellipsis; vertical-align: middle; }
 .cash-book-money { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .cash-book-money-heading { text-align: right !important; }

@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { CashBookEntry, CashBookPageResult } from '../../features/cash-book/cashBookApi'
 import { formatCurrencyDecimal, formatDate } from '../../lib/formatters'
 import { Icon } from '../ui/Icon'
@@ -9,6 +13,8 @@ type CashBookTableProps = {
   onView: (entry: CashBookEntry) => void
   onEdit: (entry: CashBookEntry) => void
   onDelete: (entry: CashBookEntry) => void
+  canReorder: boolean
+  onReorder: (ids: string[]) => void
 }
 
 function entryTypeLabel(entry: CashBookEntry) {
@@ -17,40 +23,71 @@ function entryTypeLabel(entry: CashBookEntry) {
   return entry.categoryName ?? '—'
 }
 
-export function CashBookTable({ entries, pagination, onPageChange, onView, onEdit, onDelete }: CashBookTableProps) {
+function SortableEntryRow({ entry, canReorder, onView, onEdit, onDelete }: {
+  entry: CashBookEntry
+  canReorder: boolean
+  onView: (entry: CashBookEntry) => void
+  onEdit: (entry: CashBookEntry) => void
+  onDelete: (entry: CashBookEntry) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id, disabled: !canReorder })
+  const isIncome = entry.type === 'income' || entry.type === 'transfer_credit'
+  const isTransfer = entry.type.startsWith('transfer_')
+  return (
+    <tr ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.55 : 1 }}>
+      <td className="date-cell cash-book-date-with-handle">
+        {canReorder ? <button className="cash-book-drag-handle" title="Arraste para mudar a ordem" aria-label={`Reordenar ${entry.description}`} {...attributes} {...listeners}>⠿</button> : <span className="cash-book-drag-spacer" />}
+        <strong>{formatDate(entry.occurredAt)}</strong>
+      </td>
+      <td className="description-cell"><strong>{entry.description}</strong>{isTransfer && <small>{entryTypeLabel(entry)}</small>}</td>
+      <td className="cash-book-category-cell">
+        <span className={isTransfer ? 'cash-book-transfer-chip' : 'category-chip'}>{isTransfer ? 'Transferência' : entryTypeLabel(entry)}</span>
+        {!isTransfer && entry.destinationName && <small>{entry.destinationName}</small>}
+      </td>
+      <td className="cash-book-money income">{isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
+      <td className="cash-book-money expense">{!isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
+      <td className="cash-book-money balance">{entry.balance ? formatCurrencyDecimal(entry.balance) : '—'}</td>
+      <td className="row-actions">
+        <button className="row-action" title="Ver movimentação" aria-label="Ver movimentação" onClick={() => onView(entry)}><Icon name="eye" size={17} /></button>
+        <button className="row-action" title="Editar movimentação" aria-label="Editar movimentação" onClick={() => onEdit(entry)}><Icon name="edit" size={17} /></button>
+        <button className="row-action delete-action" title="Excluir movimentação" aria-label="Excluir movimentação" onClick={() => onDelete(entry)}><Icon name="trash" size={17} /></button>
+      </td>
+    </tr>
+  )
+}
+
+export function CashBookTable({ entries, pagination, onPageChange, onView, onEdit, onDelete, canReorder, onReorder }: CashBookTableProps) {
+  const [dragging, setDragging] = useState(false)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+  function finishDrag(event: DragEndEvent) {
+    setDragging(false)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = entries.findIndex((entry) => entry.id === active.id)
+    const newIndex = entries.findIndex((entry) => entry.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+    onReorder(arrayMove(entries, oldIndex, newIndex).map((entry) => entry.id))
+  }
   return (
     <section className="panel cash-book-table-panel">
       <div className="cash-book-table-heading">
-        <div><h2>Movimentações</h2><p>Saldo calculado na ordem cronológica, incluindo transferências da conta</p></div>
+        <div><h2>Movimentações</h2><p>Ordem padrão por criação; saldo calculado pela data da movimentação.</p></div>
+        {canReorder && entries.length > 1 && <span className="cash-book-reorder-hint">Arraste pelo ⠿ para reorganizar</span>}
       </div>
       <div className="table-scroll">
         <table className="transactions-table cash-book-table">
           <thead><tr><th>Data</th><th>Descrição</th><th>Categoria / repasse</th><th className="cash-book-money-heading">Entrada</th><th className="cash-book-money-heading">Saída</th><th className="cash-book-balance-heading">Saldo</th><th className="actions-heading-cell">Ações</th></tr></thead>
-          <tbody>
-            {entries.map((entry) => {
-              const isIncome = entry.type === 'income' || entry.type === 'transfer_credit'
-              const isTransfer = entry.type.startsWith('transfer_')
-              return (
-                <tr key={entry.id}>
-                  <td className="date-cell"><strong>{formatDate(entry.occurredAt)}</strong></td>
-                  <td className="description-cell"><strong>{entry.description}</strong>{isTransfer && <small>{entryTypeLabel(entry)}</small>}</td>
-                  <td className="cash-book-category-cell">
-                    <span className={isTransfer ? 'cash-book-transfer-chip' : 'category-chip'}>{isTransfer ? 'Transferência' : entryTypeLabel(entry)}</span>
-                    {!isTransfer && entry.destinationName && <small>{entry.destinationName}</small>}
-                  </td>
-                  <td className="cash-book-money income">{isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
-                  <td className="cash-book-money expense">{!isIncome ? formatCurrencyDecimal(entry.amount) : '—'}</td>
-                  <td className="cash-book-money balance">{entry.balance ? formatCurrencyDecimal(entry.balance) : '—'}</td>
-                  <td className="row-actions">
-                    <button className="row-action" title="Ver movimentação" aria-label="Ver movimentação" onClick={() => onView(entry)}><Icon name="eye" size={17} /></button>
-                    <button className="row-action" title="Editar movimentação" aria-label="Editar movimentação" onClick={() => onEdit(entry)}><Icon name="edit" size={17} /></button>
-                    <button className="row-action delete-action" title="Excluir movimentação" aria-label="Excluir movimentação" onClick={() => onDelete(entry)}><Icon name="trash" size={17} /></button>
-                  </td>
-                </tr>
-              )
-            })}
-            {entries.length === 0 && <tr><td className="empty-table" colSpan={7}>Nenhuma movimentação encontrada para esta conta e competência.</td></tr>}
-          </tbody>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragCancel={() => setDragging(false)} onDragEnd={finishDrag}>
+            <SortableContext items={entries.map((entry) => entry.id)} strategy={verticalListSortingStrategy}>
+              <tbody className={dragging ? 'cash-book-dragging' : ''}>
+                {entries.map((entry) => <SortableEntryRow key={entry.id} entry={entry} canReorder={canReorder} onView={onView} onEdit={onEdit} onDelete={onDelete} />)}
+                {entries.length === 0 && <tr><td className="empty-table" colSpan={7}>Nenhuma movimentação encontrada para esta conta e competência.</td></tr>}
+              </tbody>
+            </SortableContext>
+          </DndContext>
         </table>
       </div>
       {pagination && <div className="table-footer">

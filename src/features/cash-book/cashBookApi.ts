@@ -160,6 +160,8 @@ export const cashBookApi = {
     fromDate?: string;
     toDate?: string;
   }) => request<CashBookPageResult>(`/cash-book?${queryString(filters)}`),
+  reorderEntries: (input: { accountId: string; month: string; page: number; pageSize: number; orderedEntryIds: string[] }) =>
+    request<{ reordered: boolean }>('/cash-book/order', { method: 'PATCH', body: JSON.stringify(input) }),
   getSummary: (accountId: string, month: string) =>
     request<CashBookSummary>(
       `/cash-book/summary?${queryString({ accountId, month })}`,
