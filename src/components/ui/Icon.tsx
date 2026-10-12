@@ -4,7 +4,7 @@ export type IconName =
   | 'dashboard' | 'cash' | 'investments' | 'closing' | 'reports' | 'settings'
   | 'calendar' | 'sun' | 'moon' | 'plus' | 'sparkle' | 'wallet' | 'trend'
   | 'arrow-up' | 'arrow-down' | 'eye' | 'edit' | 'trash' | 'copy' | 'check'
-  | 'chevron' | 'close' | 'bank' | 'logout' | 'menu' | 'panel-collapse' | 'panel-expand' | 'book'
+  | 'chevron' | 'chevron-left' | 'chevron-right' | 'close' | 'bank' | 'logout' | 'menu' | 'panel-collapse' | 'panel-expand' | 'book'
 
 const paths: Record<IconName, ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
@@ -28,6 +28,8 @@ const paths: Record<IconName, ReactNode> = {
   copy: <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" /></>,
   check: <><path d="m5 12 4 4L19 6" /></>,
   chevron: <path d="m7 10 5 5 5-5" />,
+  'chevron-left': <path d="m15 18-6-6 6-6" />,
+  'chevron-right': <path d="m9 18 6-6-6-6" />,
   close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   bank: <><path d="m3 9 9-6 9 6M4 10h16M6 10v8m4-8v8m4-8v8m4-8v8M3 21h18M4 18h16" /></>,
   logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" /></>,

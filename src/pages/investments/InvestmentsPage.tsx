@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { toast } from "sonner";
 import { Icon } from "../../components/ui/Icon";
+import { SelectField } from "../../components/ui/SelectField";
+import { FinancialAccountDialog } from "../../components/cash-book/FinancialAccountDialog";
 import { InvestmentApplicationDialog } from "../../components/investments/InvestmentApplicationDialog";
 import {
   InvestmentMovementDialog,
@@ -46,9 +49,9 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [accountId, setAccountId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [refresh, setRefresh] = useState(0);
   const [showApplication, setShowApplication] = useState(false);
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [editingApplication, setEditingApplication] =
     useState<InvestmentApplication | null>(null);
   const [movementDraft, setMovementDraft] =
@@ -155,9 +158,7 @@ export function InvestmentsPage({ month }: { month: string }) {
       setShowApplication(false);
       setEditingApplication(null);
       setApplicationId(saved.id);
-      setNotice(
-        editingApplication ? "Aplicação atualizada." : "Aplicação cadastrada.",
-      );
+      toast.success(editingApplication ? "Aplicação atualizada." : "Aplicação cadastrada.");
       setRefresh((value) => value + 1);
     } catch (reason) {
       setError(
@@ -169,6 +170,15 @@ export function InvestmentsPage({ month }: { month: string }) {
       setSaving(false);
     }
   }
+
+  async function saveInvestmentAccount(input: Parameters<typeof cashBookApi.createAccount>[0]) {
+    const account = await cashBookApi.createAccount(input);
+    setShowAccountDialog(false);
+    setAccountId(account.id);
+    toast.success("Conta de investimento cadastrada e disponível no Livro Caixa.");
+    setRefresh((value) => value + 1);
+  }
+
   async function saveMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!movementDraft) return;
@@ -217,7 +227,7 @@ export function InvestmentsPage({ month }: { month: string }) {
       }
       setMovementDraft(null);
       setEditingMovement(null);
-      setNotice("Movimentação registrada.");
+      toast.success("Movimentação registrada.");
       setRefresh((value) => value + 1);
     } catch (reason) {
       setError(
@@ -233,7 +243,7 @@ export function InvestmentsPage({ month }: { month: string }) {
     if (!window.confirm("Excluir esta movimentação do histórico?")) return;
     try {
       await investmentsApi.deleteMovement(movement.id);
-      setNotice("Movimentação excluída. O saldo foi recalculado.");
+      toast.success("Movimentação excluída. O saldo foi recalculado.");
       setRefresh((value) => value + 1);
     } catch (reason) {
       setError(
@@ -274,43 +284,31 @@ export function InvestmentsPage({ month }: { month: string }) {
   return (
     <main className="page-content investments-page">
       <div className="investments-toolbar">
-        <label className="cash-book-account-select">
+        <div className="cash-book-account-select">
           <Icon name="bank" size={16} />
-          <span>Conta</span>
-          <select
-            aria-label="Filtrar por conta"
+          <span>Conta de investimento</span>
+          <SelectField
+            ariaLabel="Filtrar por conta"
             value={accountId}
-            onChange={(event) => {
-              setAccountId(event.target.value);
+            options={[{ value: '', label: investmentAccounts.length ? 'Todas as contas' : 'Nenhuma cadastrada' }, ...investmentAccounts.map((account) => ({ value: account.id, label: account.name }))]}
+            onValueChange={(value) => {
+              setAccountId(value);
               setApplicationId("");
             }}
-          >
-            <option value="">Todas as contas</option>
-            {investmentAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="cash-book-account-select">
+          />
+        </div>
+        <div className="cash-book-account-select">
           <Icon name="wallet" size={16} />
           <span>Aplicação</span>
-          <select
-            aria-label="Filtrar aplicação"
-            value={applicationId}
-            onChange={(event) => setApplicationId(event.target.value)}
-          >
-            <option value="">Todas as aplicações</option>
-            {visibleApplications.map((app) => (
-              <option key={app.id} value={app.id}>
-                {app.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <SelectField ariaLabel="Filtrar aplicação" value={applicationId} options={[{ value: '', label: 'Todas as aplicações' }, ...visibleApplications.map((app) => ({ value: app.id, label: app.name }))]} onValueChange={setApplicationId} />
+        </div>
+        <button className="secondary-button" onClick={() => setShowAccountDialog(true)}>
+          <Icon name="plus" size={15} />
+          Nova conta de investimento
+        </button>
         <button
           className="secondary-button"
+          disabled={!investmentAccounts.length}
           onClick={() => {
             setEditingApplication(null);
             setApplicationDate(today());
@@ -339,15 +337,6 @@ export function InvestmentsPage({ month }: { month: string }) {
           Movimentação
         </button>
       </div>
-      {notice && (
-        <div className="cash-book-feedback success">
-          <Icon name="check" size={15} />
-          {notice}
-          <button onClick={() => setNotice("")} aria-label="Fechar">
-            ×
-          </button>
-        </div>
-      )}
       {error && (
         <div className="cash-book-feedback error" role="alert">
           {error}
@@ -393,18 +382,20 @@ export function InvestmentsPage({ month }: { month: string }) {
             </span>
             <h3>Nenhuma aplicação cadastrada</h3>
             <p>
-              Cadastre uma aplicação vinculada a uma conta do tipo investimento
-              para começar.
+              {investmentAccounts.length
+                ? "Cadastre uma aplicação vinculada a uma conta do tipo investimento para começar."
+                : "O Livro Caixa mostra todas as contas ativas. Aqui aparecem somente contas do tipo investimento, e ainda não há nenhuma cadastrada."}
             </p>
             <button
               className="primary-button"
+              disabled={!investmentAccounts.length}
               onClick={() => {
                 setApplicationDate(today());
                 setShowApplication(true);
               }}
             >
               <Icon name="plus" size={15} />
-              Cadastrar aplicação
+              {investmentAccounts.length ? "Cadastrar aplicação" : "Cadastre uma conta de investimento primeiro"}
             </button>
           </div>
         ) : (
@@ -444,7 +435,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                           await investmentsApi.updateApplication(app.id, {
                             active: !app.active,
                           });
-                          setNotice(
+                          toast.success(
                             app.active
                               ? "Aplicação desativada."
                               : "Aplicação ativada.",
@@ -493,7 +484,7 @@ export function InvestmentsPage({ month }: { month: string }) {
           </div>
         ) : (
           <div className="table-scroll">
-            <table className="cash-book-table investments-table">
+            <table className="transactions-table cash-book-table investments-table">
               <thead>
                 <tr>
                   <th>Data</th>
@@ -594,6 +585,14 @@ export function InvestmentsPage({ month }: { month: string }) {
             setEditingApplication(null);
           }}
           onSubmit={saveApplication}
+        />
+      )}
+      {showAccountDialog && (
+        <FinancialAccountDialog
+          initialType="investment"
+          fixedType="investment"
+          onClose={() => setShowAccountDialog(false)}
+          onSave={saveInvestmentAccount}
         />
       )}
       {movementDraft && (

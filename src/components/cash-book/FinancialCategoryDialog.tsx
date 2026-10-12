@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { CategoryNature } from '../../features/cash-book/cashBookApi'
 import { Icon } from '../ui/Icon'
+import { SelectField } from '../ui/SelectField'
 
 type FinancialCategoryDialogProps = {
   onClose: () => void
@@ -38,7 +39,7 @@ export function FinancialCategoryDialog({ onClose, onSave }: FinancialCategoryDi
         <h2 id="category-dialog-title">Nova categoria</h2>
         <p>As categorias se aplicam somente a entradas ou a saídas.</p>
         <label className="form-field"><span>Nome da categoria</span><input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Manutenção" /></label>
-        <label className="form-field"><span>Natureza</span><select value={nature} onChange={(event) => setNature(event.target.value as CategoryNature)}><option value="income">Receita</option><option value="expense">Despesa</option></select></label>
+        <label className="form-field"><span>Natureza</span><SelectField ariaLabel="Natureza da categoria" value={nature} onValueChange={(value) => setNature(value as CategoryNature)} options={[{ value: 'income', label: 'Receita' }, { value: 'expense', label: 'Despesa' }]} /></label>
         {error && <p className="cash-book-error" role="alert">{error}</p>}
         <div className="dialog-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancelar</button><button type="submit" className="primary-button" disabled={saving}><Icon name="check" size={15} />{saving ? 'Salvando…' : 'Criar categoria'}</button></div>
       </form>

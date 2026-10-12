@@ -12,15 +12,12 @@ type SidebarProps = {
 
 const navigation: { key: PageKey; label: string; icon: IconName }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { key: 'cash-flow', label: 'Fluxo de Caixa', icon: 'cash' },
   { key: 'cash-book', label: 'Livro Caixa', icon: 'book' },
   { key: 'forecasts', label: 'Previsões', icon: 'calendar' },
   { key: 'repasses', label: 'Repasses', icon: 'cash' },
   { key: 'investments', label: 'Investimentos', icon: 'investments' },
-  { key: 'investment-evolution', label: 'Evolução', icon: 'reports' },
   { key: 'closing', label: 'Fechamento Financeiro', icon: 'closing' },
   { key: 'reports', label: 'Relatórios', icon: 'reports' },
-  { key: 'settings', label: 'Configurações', icon: 'settings' },
 ];
 
 export function Sidebar({
@@ -76,19 +73,37 @@ export function Sidebar({
 
         <p className="nav-heading">MENU PRINCIPAL</p>
         <nav className="main-navigation" aria-label="Menu principal">
-          {navigation.map((item) => (
-            <button
-              className={`nav-item ${activePage === item.key ? 'nav-item-active' : ''}`}
-              key={item.key}
-              onClick={() => onNavigate(item.key)}
-              aria-current={activePage === item.key ? 'page' : undefined}
-              title={isCollapsed ? item.label : undefined}
-            >
-              <Icon name={item.icon} size={16} />
-              <span>{item.label}</span>
-              {activePage === item.key && <i className="nav-indicator" />}
-            </button>
-          ))}
+          {navigation.map((item) => {
+            const isInvestmentsParent = item.key === 'investments';
+            const isActive = activePage === item.key || (isInvestmentsParent && activePage === 'investment-evolution');
+            return (
+              <div className="nav-group" key={item.key}>
+                <button
+                  className={`nav-item ${isActive ? 'nav-item-active' : ''}`}
+                  onClick={() => onNavigate(item.key)}
+                  aria-current={activePage === item.key ? 'page' : undefined}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <Icon name={item.icon} size={16} />
+                  <span>{item.label}</span>
+                  {isActive && <i className="nav-indicator" />}
+                </button>
+                {isInvestmentsParent && (
+                  <div className="nav-submenu" aria-label="Submenu de investimentos">
+                    <button
+                      className={`nav-subitem ${activePage === 'investment-evolution' ? 'nav-subitem-active' : ''}`}
+                      onClick={() => onNavigate('investment-evolution')}
+                      aria-current={activePage === 'investment-evolution' ? 'page' : undefined}
+                      title={isCollapsed ? 'Evolução' : undefined}
+                    >
+                      <span aria-hidden="true" />
+                      <span>Evolução</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="sidebar-user">

@@ -1,4 +1,5 @@
 import { Icon } from '../ui/Icon';
+import { SelectField } from '../ui/SelectField';
 import {
   forecastsApi,
   type ForecastDetails,
@@ -103,19 +104,7 @@ export function ForecastDetail({
             Candidatos próximos por natureza, valor e data. A conciliação exige
             sua confirmação.
           </p>
-          <select
-            aria-label="Movimentação para conciliar"
-            value={target}
-            onChange={(e) => onTarget(e.target.value)}
-          >
-            <option value="">Selecione uma movimentação</option>
-            {matches.map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.occurredAt} · {row.description} ·{' '}
-                {formatCurrencyDecimal(row.amount)} · {row.accountName}
-              </option>
-            ))}
-          </select>
+          <SelectField ariaLabel="Movimentação para conciliar" value={target} placeholder="Selecione uma movimentação" options={matches.map((row) => ({ value: row.id, label: `${row.occurredAt} · ${row.description} · ${formatCurrencyDecimal(row.amount)} · ${row.accountName}` }))} onValueChange={onTarget} />
           <button
             className="secondary-button"
             disabled={!target || busy}

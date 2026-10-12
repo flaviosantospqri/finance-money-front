@@ -1,10 +1,14 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import type { AccountType } from "../../features/cash-book/cashBookApi";
+import type { AccountType, FinancialAccount } from "../../features/cash-book/cashBookApi";
 import { DatePicker } from "../ui/DatePicker";
 import { Icon } from "../ui/Icon";
+import { SelectField } from "../ui/SelectField";
 
 type FinancialAccountDialogProps = {
+  account?: FinancialAccount;
+  initialType?: AccountType;
+  fixedType?: AccountType;
   onClose: () => void;
   onSave: (input: {
     name: string;
@@ -29,14 +33,17 @@ function normalizeMoney(value: string) {
 }
 
 export function FinancialAccountDialog({
+  account,
+  initialType = "checking",
+  fixedType,
   onClose,
   onSave,
 }: FinancialAccountDialogProps) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState<AccountType>("checking");
-  const [institution, setInstitution] = useState("");
-  const [openingBalance, setOpeningBalance] = useState("0,00");
-  const [referenceDate, setReferenceDate] = useState(localToday());
+  const [name, setName] = useState(account?.name ?? "");
+  const [type, setType] = useState<AccountType>(account?.type ?? initialType);
+  const [institution, setInstitution] = useState(account?.institution ?? "");
+  const [openingBalance, setOpeningBalance] = useState(account?.openingBalance.replace(".", ",") ?? "0,00");
+  const [referenceDate, setReferenceDate] = useState(account?.referenceDate ?? localToday());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -65,7 +72,7 @@ export function FinancialAccountDialog({
       setError(
         reason instanceof Error
           ? reason.message
-          : "Não foi possível cadastrar a conta.",
+          : "Não foi possível salvar a conta.",
       );
     } finally {
       setSaving(false);
@@ -90,8 +97,8 @@ export function FinancialAccountDialog({
         <span className="placeholder-icon">
           <Icon name="bank" size={21} />
         </span>
-        <h2 id="account-dialog-title">Nova conta financeira</h2>
-        <p>Cadastre uma conta para registrar e acompanhar o saldo inicial.</p>
+        <h2 id="account-dialog-title">{account ? "Editar conta financeira" : "Nova conta financeira"}</h2>
+        <p>{account ? "Atualize os dados da conta financeira." : "Cadastre uma conta para registrar e acompanhar o saldo inicial."}</p>
         <label className="form-field">
           <span>Nome da conta</span>
           <input
@@ -104,15 +111,7 @@ export function FinancialAccountDialog({
         </label>
         <label className="form-field">
           <span>Tipo da conta</span>
-          <select
-            value={type}
-            onChange={(event) => setType(event.target.value as AccountType)}
-          >
-            <option value="checking">Conta corrente</option>
-            <option value="payment">Conta de pagamento</option>
-            <option value="cash">Dinheiro</option>
-            <option value="investment">Investimento</option>
-          </select>
+          {fixedType ? <span className="account-type-fixed">Investimento</span> : <SelectField ariaLabel="Tipo da conta" value={type} onValueChange={(value) => setType(value as AccountType)} options={[{ value: 'checking', label: 'Conta corrente' }, { value: 'payment', label: 'Conta de pagamento' }, { value: 'cash', label: 'Dinheiro' }, { value: 'investment', label: 'Investimento' }]} />}
         </label>
         <label className="form-field">
           <span>
@@ -154,7 +153,7 @@ export function FinancialAccountDialog({
           </button>
           <button type="submit" className="primary-button" disabled={saving}>
             <Icon name="check" size={15} />
-            {saving ? "Salvando…" : "Criar conta"}
+            {saving ? "Salvando…" : account ? "Salvar alterações" : "Criar conta"}
           </button>
         </div>
       </form>

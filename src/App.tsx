@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
 import { DeleteConfirmation } from './components/cash-flow/DeleteConfirmation';
 import {
   LaunchDrawer,
@@ -165,8 +166,8 @@ function App() {
 
         {activePage === 'dashboard' && (
           <DashboardPage
-            transactions={transactions}
-            onOpenCashFlow={() => navigate('cash-flow')}
+            month={month}
+            onOpenCashBook={() => navigate('cash-book')}
             onOpenClosing={() => navigate('closing')}
           />
         )}
@@ -180,8 +181,8 @@ function App() {
           />
         )}
         {activePage === 'cash-book' && <CashBookPage />}
-        {activePage === 'forecasts' && <ForecastsPage month={month} />}
-        {activePage === 'repasses' && <RepassesPage month={month} />}
+        {activePage === 'forecasts' && <ForecastsPage month={month} onManageRepasses={() => navigate('repasses')} />}
+        {activePage === 'repasses' && <RepassesPage month={month} onMonthChange={setMonth} />}
         {activePage === 'investments' && <InvestmentsPage month={month} />}
         {activePage === 'investment-evolution' && <InvestmentEvolutionPage />}
         {activePage === 'profile' && (
@@ -215,6 +216,7 @@ function App() {
           onConfirm={deleteTransaction}
         />
       )}
+      <Toaster position="top-right" theme={theme} richColors closeButton />
     </div>
   );
 }

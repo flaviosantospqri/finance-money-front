@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { ptBR } from 'react-day-picker/locale'
 import { Icon } from './Icon'
+import { MonthNavigator } from './MonthNavigator'
 
 type DatePickerProps = {
   value: string
@@ -35,10 +36,15 @@ function formatSelectedDate(date: Date, mode: 'date' | 'month') {
 }
 
 export function DatePicker({ value, onChange, mode = 'date', ariaLabel, disabled = false }: DatePickerProps) {
+  if (mode === 'month') return <MonthNavigator value={value} onChange={onChange} ariaLabel={ariaLabel} disabled={disabled} className="date-picker-month" />
+  return <CalendarDatePicker value={value} onChange={onChange} ariaLabel={ariaLabel} disabled={disabled} />
+}
+
+function CalendarDatePicker({ value, onChange, ariaLabel, disabled = false }: Omit<DatePickerProps, 'mode'>) {
   const [isOpen, setIsOpen] = useState(false)
-  const [visibleMonth, setVisibleMonth] = useState(() => parseLocalDate(value, mode))
+  const [visibleMonth, setVisibleMonth] = useState(() => parseLocalDate(value, 'date'))
   const pickerRef = useRef<HTMLDivElement>(null)
-  const selectedDate = parseLocalDate(value, mode)
+  const selectedDate = parseLocalDate(value, 'date')
 
   useEffect(() => {
     if (!isOpen) return
@@ -61,12 +67,12 @@ export function DatePicker({ value, onChange, mode = 'date', ariaLabel, disabled
 
   function handleSelect(date: Date | undefined) {
     if (!date) return
-    onChange(mode === 'month' ? toIsoDate(new Date(date.getFullYear(), date.getMonth(), 1)).slice(0, 7) : toIsoDate(date))
+    onChange(toIsoDate(date))
     setIsOpen(false)
   }
 
   return (
-    <div className={`date-picker${mode === 'month' ? ' date-picker-month' : ''}`} ref={pickerRef}>
+    <div className="date-picker" ref={pickerRef}>
       <button
         type="button"
         className="date-picker-trigger"
@@ -75,27 +81,25 @@ export function DatePicker({ value, onChange, mode = 'date', ariaLabel, disabled
         aria-expanded={isOpen}
         disabled={disabled}
         onClick={() => {
-          if (!isOpen) setVisibleMonth(parseLocalDate(value, mode))
+          if (!isOpen) setVisibleMonth(parseLocalDate(value, 'date'))
           setIsOpen(!isOpen)
         }}
       >
         <Icon name="calendar" size={15} />
-        <span>{formatSelectedDate(selectedDate, mode)}</span>
+        <span>{formatSelectedDate(selectedDate, 'date')}</span>
         <Icon name="chevron" size={13} />
       </button>
       {isOpen && (
-        <div className="date-picker-popover" role="dialog" aria-label={`Selecionar ${mode === 'month' ? 'mês' : 'data'}`}>
+        <div className="date-picker-popover" role="dialog" aria-label="Selecionar data">
           <DayPicker
             mode="single"
             selected={selectedDate}
             onSelect={handleSelect}
             month={visibleMonth}
             onMonthChange={setVisibleMonth}
-            captionLayout="dropdown"
             navLayout="around"
             startMonth={firstAvailableMonth}
             endMonth={lastAvailableMonth}
-            reverseYears
             locale={ptBR}
             showOutsideDays
             fixedWeeks

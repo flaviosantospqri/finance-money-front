@@ -7,6 +7,7 @@ import type {
 } from "../../features/cash-book/cashBookApi";
 import type { InvestmentApplication } from "../../features/investments/investmentsApi";
 import { DatePicker } from "../ui/DatePicker";
+import { SelectField } from "../ui/SelectField";
 import { Icon } from "../ui/Icon";
 
 export type CashBookFormData = {
@@ -307,95 +308,43 @@ export function CashBookDrawer({
                 <div className="form-field-row">
                   <label className="form-field">
                     <span>Conta de origem</span>
-                    <select
-                      required
+                    <SelectField
+                      ariaLabel="Conta de origem"
                       value={sourceAccountId}
-                      onChange={(event) => {
-                        setSourceAccountId(event.target.value);
+                      placeholder="Selecione"
+                      options={accounts.map((account) => ({ value: account.id, label: account.name }))}
+                      onValueChange={(value) => {
+                        setSourceAccountId(value);
                         setSourceApplicationId("");
                       }}
-                    >
-                      <option value="">Selecione</option>
-                      {accounts.map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </label>
                   <label className="form-field">
                     <span>Conta de destino</span>
-                    <select
-                      required
+                    <SelectField
+                      ariaLabel="Conta de destino"
                       value={destinationAccountId}
-                      onChange={(event) => {
-                        setDestinationAccountId(event.target.value);
+                      placeholder="Selecione"
+                      options={accounts.map((account) => ({ value: account.id, label: account.name, disabled: account.id === sourceAccountId }))}
+                      onValueChange={(value) => {
+                        setDestinationAccountId(value);
                         setDestinationApplicationId("");
                       }}
-                    >
-                      <option value="">Selecione</option>
-                      {accounts.map((account) => (
-                        <option
-                          key={account.id}
-                          value={account.id}
-                          disabled={account.id === sourceAccountId}
-                        >
-                          {account.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </label>
                 </div>
                 {accounts.find((account) => account.id === sourceAccountId)
                   ?.type === "investment" && (
                   <label className="form-field">
                     <span>Aplicação de origem</span>
-                    <select
-                      required
-                      value={sourceApplicationId}
-                      onChange={(event) =>
-                        setSourceApplicationId(event.target.value)
-                      }
-                    >
-                      <option value="">Selecione</option>
-                      {applications
-                        .filter(
-                          (application) =>
-                            application.accountId === sourceAccountId &&
-                            application.active,
-                        )
-                        .map((application) => (
-                          <option key={application.id} value={application.id}>
-                            {application.name}
-                          </option>
-                        ))}
-                    </select>
+                    <SelectField ariaLabel="Aplicação de origem" value={sourceApplicationId} placeholder="Selecione" options={applications.filter((application) => application.accountId === sourceAccountId && application.active).map((application) => ({ value: application.id, label: application.name }))} onValueChange={setSourceApplicationId} />
                   </label>
                 )}
                 {accounts.find((account) => account.id === destinationAccountId)
                   ?.type === "investment" && (
                   <label className="form-field">
                     <span>Aplicação de destino</span>
-                    <select
-                      required
-                      value={destinationApplicationId}
-                      onChange={(event) =>
-                        setDestinationApplicationId(event.target.value)
-                      }
-                    >
-                      <option value="">Selecione</option>
-                      {applications
-                        .filter(
-                          (application) =>
-                            application.accountId === destinationAccountId &&
-                            application.active,
-                        )
-                        .map((application) => (
-                          <option key={application.id} value={application.id}>
-                            {application.name}
-                          </option>
-                        ))}
-                    </select>
+                    <SelectField ariaLabel="Aplicação de destino" value={destinationApplicationId} placeholder="Selecione" options={applications.filter((application) => application.accountId === destinationAccountId && application.active).map((application) => ({ value: application.id, label: application.name }))} onValueChange={setDestinationApplicationId} />
                   </label>
                 )}
               </>
@@ -403,33 +352,11 @@ export function CashBookDrawer({
               <>
                 <label className="form-field">
                   <span>Conta financeira</span>
-                  <select
-                    required
-                    value={accountId}
-                    onChange={(event) => setAccountId(event.target.value)}
-                  >
-                    <option value="">Selecione</option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
+                  <SelectField ariaLabel="Conta financeira" value={accountId} placeholder="Selecione" options={accounts.map((account) => ({ value: account.id, label: account.name }))} onValueChange={setAccountId} />
                 </label>
                 <label className="form-field">
                   <span>Categoria</span>
-                  <select
-                    required
-                    value={categoryId}
-                    onChange={(event) => setCategoryId(event.target.value)}
-                  >
-                    <option value="">Selecione</option>
-                    {matchingCategories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={matchingCategories.map((category) => ({ value: category.id, label: category.name }))} onValueChange={setCategoryId} />
                 </label>
               </>
             )}

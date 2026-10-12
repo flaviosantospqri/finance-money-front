@@ -4,6 +4,8 @@ import type { FinancialAccount } from "../../features/cash-book/cashBookApi";
 import { investmentEvolutionApi, type InvestmentEvolutionSummary, type MonthlyInvestmentEvolution } from "../../features/investment-evolution/investmentEvolutionApi";
 import type { InvestmentApplication } from "../../features/investments/investmentsApi";
 import { formatCurrencyDecimal } from "../../lib/formatters";
+import { MonthNavigator } from "../../components/ui/MonthNavigator";
+import { SelectField } from "../../components/ui/SelectField";
 
 const currentYear = new Date().getFullYear();
 const monthLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(new Date(`${value}-15T12:00:00`)).replace(".", "");
@@ -40,7 +42,6 @@ export function InvestmentEvolutionPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     Promise.all([investmentEvolutionApi.getMonthly(filters), investmentEvolutionApi.getSummary(filters)])
       .then(([monthly, totals]) => {
         if (!active) return;
@@ -53,11 +54,12 @@ export function InvestmentEvolutionPage() {
     return () => { active = false; };
   }, [filters]);
 
-  function changeFromMonth(value: string) { setFromMonth(value); if (value > toMonth) setToMonth(value); }
+  function changeFromMonth(value: string) { setLoading(true); setFromMonth(value); if (value > toMonth) setToMonth(value); }
 
-  function changeToMonth(value: string) { setToMonth(value); if (value < fromMonth) setFromMonth(value); }
+  function changeToMonth(value: string) { setLoading(true); setToMonth(value); if (value < fromMonth) setFromMonth(value); }
 
   function changeYear(value: string) {
+    setLoading(true);
     setYear(value);
     setFromMonth(`${value}-01`);
     setToMonth(`${value}-12`);
@@ -83,11 +85,11 @@ export function InvestmentEvolutionPage() {
   return (
     <main className="page-content investment-evolution-page">
       <div className="investment-evolution-toolbar">
-        <label>Ano<select value={year} onChange={(event) => changeYear(event.target.value)}>{Array.from({ length: 8 }, (_, index) => String(currentYear - 5 + index)).map((value) => <option key={value}>{value}</option>)}</select></label>
-        <label>De<select value={fromMonth} onChange={(event) => changeFromMonth(event.target.value)}>{monthsForYear(year).map((value) => <option key={value} value={value}>{fullMonthLabel(value)}</option>)}</select></label>
-        <label>Até<select value={toMonth} onChange={(event) => changeToMonth(event.target.value)}>{monthsForYear(year).map((value) => <option key={value} value={value}>{fullMonthLabel(value)}</option>)}</select></label>
-        <label>Conta<select value={accountId} onChange={(event) => { setAccountId(event.target.value); setApplicationId(""); }}><option value="">Todas as contas</option>{accounts.filter((account) => account.type === "investment").map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
-        <label>Aplicação<select value={applicationId} onChange={(event) => setApplicationId(event.target.value)}><option value="">Todas as aplicações</option>{filteredApplications.map((app) => <option key={app.id} value={app.id}>{app.name}</option>)}</select></label>
+        <label>Ano<SelectField ariaLabel="Ano" value={year} onValueChange={changeYear} options={Array.from({ length: 8 }, (_, index) => String(currentYear - 5 + index)).map((value) => ({ value, label: value }))} /></label>
+        <label>De<MonthNavigator ariaLabel="Mês inicial" value={fromMonth} min={`${year}-01`} max={`${year}-12`} onChange={changeFromMonth} /></label>
+        <label>Até<MonthNavigator ariaLabel="Mês final" value={toMonth} min={`${year}-01`} max={`${year}-12`} onChange={changeToMonth} /></label>
+        <label>Conta<SelectField ariaLabel="Conta de investimento" value={accountId} onValueChange={(value) => { setLoading(true); setAccountId(value); setApplicationId(""); }} options={[{ value: '', label: 'Todas as contas' }, ...accounts.filter((account) => account.type === "investment").map((account) => ({ value: account.id, label: account.name }))]} /></label>
+        <label>Aplicação<SelectField ariaLabel="Aplicação" value={applicationId} onValueChange={(value) => { setLoading(true); setApplicationId(value); }} options={[{ value: '', label: 'Todas as aplicações' }, ...filteredApplications.map((app) => ({ value: app.id, label: app.name }))]} /></label>
         <button className="secondary-button" onClick={exportCsv} disabled={!rows.length}>Exportar CSV</button>
       </div>
 
@@ -104,13 +106,12 @@ export function InvestmentEvolutionPage() {
           <article className="panel investment-evolution-chart"><header><h2>Patrimônio ao longo do tempo</h2><p>Saldo consolidado no fechamento de cada mês</p></header><div className="investment-evolution-chart-area"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartRows} margin={{ top: 14, right: 18, bottom: 2, left: 4 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--row-border)"/><XAxis dataKey="label" tick={{ fill: "var(--text-soft)", fontSize: 12 }}/><YAxis tickFormatter={(value: number) => `R$ ${new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value)}`} tick={{ fill: "var(--text-soft)", fontSize: 11 }}/><Tooltip formatter={(value) => formatCurrencyDecimal(String(value ?? "0"))} labelFormatter={(_, payload) => payload?.[0]?.payload?.month ? fullMonthLabel(payload[0].payload.month) : ""}/><Line type="monotone" dataKey="endingBalance" name="Patrimônio" stroke="#a8d500" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }}/></LineChart></ResponsiveContainer></div></article>
           <article className="panel investment-evolution-chart"><header><h2>Aportes, resgates e rendimentos</h2><p>Movimentações registradas em cada competência</p></header><div className="investment-evolution-chart-area"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartRows} margin={{ top: 14, right: 12, bottom: 2, left: 4 }}><CartesianGrid strokeDasharray="3 3" stroke="var(--row-border)"/><XAxis dataKey="label" tick={{ fill: "var(--text-soft)", fontSize: 12 }}/><YAxis tickFormatter={(value: number) => `R$ ${new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value)}`} tick={{ fill: "var(--text-soft)", fontSize: 11 }}/><Tooltip formatter={(value) => formatCurrencyDecimal(String(value ?? "0"))} labelFormatter={(_, payload) => payload?.[0]?.payload?.month ? fullMonthLabel(payload[0].payload.month) : ""}/><Legend/><Bar dataKey="contributions" name="Aportes" fill="#00a878" radius={[4, 4, 0, 0]}/><Bar dataKey="withdrawals" name="Resgates" fill="#e35468" radius={[4, 4, 0, 0]}/><Bar dataKey="income" name="Rendimentos" fill="#6385d6" radius={[4, 4, 0, 0]}/></BarChart></ResponsiveContainer></div></article>
         </section>
-        <section className="panel investment-evolution-history"><header className="cash-book-table-heading"><div><h2>Histórico mensal</h2><p>Posição patrimonial no encerramento de cada competência</p></div><button className="secondary-button" onClick={exportCsv}>Exportar CSV</button></header><div className="table-scroll"><table className="cash-book-table"><thead><tr><th>Mês</th><th>Aportes</th><th>Resgates</th><th>Rendimentos</th><th>Saldo final</th></tr></thead><tbody>{rows.map((row) => <tr key={row.month}><td>{fullMonthLabel(row.month)}</td><td className="investment-evolution-positive">{formatCurrencyDecimal(row.contributions)}</td><td className="investment-evolution-negative">{formatCurrencyDecimal(row.withdrawals)}</td><td>{formatCurrencyDecimal(row.income)}</td><td><strong>{formatCurrencyDecimal(row.endingBalance)}</strong></td></tr>)}</tbody><tfoot><tr><td>Total do período</td><td>{total("contributions")}</td><td>{total("withdrawals")}</td><td>{total("income")}</td><td>{summary ? formatCurrencyDecimal(summary.endingBalance) : "—"}</td></tr></tfoot></table></div></section>
+        <section className="panel investment-evolution-history"><header className="cash-book-table-heading"><div><h2>Histórico mensal</h2><p>Posição patrimonial no encerramento de cada competência</p></div><button className="secondary-button" onClick={exportCsv}>Exportar CSV</button></header><div className="table-scroll"><table className="transactions-table cash-book-table investment-evolution-table"><thead><tr><th>Mês</th><th>Aportes</th><th>Resgates</th><th>Rendimentos</th><th>Saldo final</th></tr></thead><tbody>{rows.map((row) => <tr key={row.month}><td>{fullMonthLabel(row.month)}</td><td className="investment-evolution-positive">{formatCurrencyDecimal(row.contributions)}</td><td className="investment-evolution-negative">{formatCurrencyDecimal(row.withdrawals)}</td><td>{formatCurrencyDecimal(row.income)}</td><td><strong>{formatCurrencyDecimal(row.endingBalance)}</strong></td></tr>)}</tbody><tfoot><tr><td>Total do período</td><td>{total("contributions")}</td><td>{total("withdrawals")}</td><td>{total("income")}</td><td>{summary ? formatCurrencyDecimal(summary.endingBalance) : "—"}</td></tr></tfoot></table></div></section>
       </>}
     </main>
   );
 }
 
-function monthsForYear(year: string) { return Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`); }
 function toCents(value: string) { const [whole, fraction = ""] = value.split("."); return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0").slice(0, 2)); }
 function fromCents(value: bigint) { const sign = value < 0n ? "-" : ""; const absolute = value < 0n ? -value : value; return `${sign}${absolute / 100n}.${String(absolute % 100n).padStart(2, "0")}`; }
 

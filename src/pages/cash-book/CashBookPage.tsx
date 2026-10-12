@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   CashBookDrawer,
   type CashBookFormData,
 } from "../../components/cash-book/CashBookDrawer";
 import { CashBookTable } from "../../components/cash-book/CashBookTable";
 import { FinancialAccountDialog } from "../../components/cash-book/FinancialAccountDialog";
+import { FinancialAccountsManagerDialog } from "../../components/cash-book/FinancialAccountsManagerDialog";
 import { FinancialCategoryDialog } from "../../components/cash-book/FinancialCategoryDialog";
 import { cashBookApi } from "../../features/cash-book/cashBookApi";
 import type {
@@ -17,6 +19,7 @@ import type {
 import { formatCurrencyDecimal } from "../../lib/formatters";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { Icon } from "../../components/ui/Icon";
+import { SelectField } from "../../components/ui/SelectField";
 import {
   investmentsApi,
   type InvestmentApplication,
@@ -81,7 +84,6 @@ export function CashBookPage() {
   const [referenceLoading, setReferenceLoading] = useState(true);
   const [loadedQuery, setLoadedQuery] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -93,6 +95,7 @@ export function CashBookPage() {
     null,
   );
   const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [showAccountManager, setShowAccountManager] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const queryKey = [
@@ -116,7 +119,7 @@ export function CashBookPage() {
     ]);
     setAccounts(loadedAccounts);
     setCategories(loadedCategories);
-    setAccountId((current) => current || loadedAccounts[0]?.id || "");
+    setAccountId((current) => loadedAccounts.some((account) => account.id === current) ? current : loadedAccounts[0]?.id || "");
   }, []);
 
   useEffect(() => {
@@ -231,9 +234,7 @@ export function CashBookPage() {
       else await cashBookApi.createEntry(entryData);
     }
     setDrawer(null);
-    setSuccess(
-      input.entryId ? "Movimentação atualizada." : "Movimentação cadastrada.",
-    );
+    toast.success(input.entryId ? "Movimentação atualizada." : "Movimentação cadastrada.");
     setRefreshKey((current) => current + 1);
   }
 
@@ -244,7 +245,7 @@ export function CashBookPage() {
         await cashBookApi.deleteTransfer(pendingDelete.transferId);
       else await cashBookApi.deleteEntry(pendingDelete.id);
       setPendingDelete(null);
-      setSuccess("Movimentação excluída. Os saldos foram recalculados.");
+      toast.success("Movimentação excluída. Os saldos foram recalculados.");
       setRefreshKey((current) => current + 1);
     } catch (reason) {
       setError(
@@ -267,7 +268,7 @@ export function CashBookPage() {
     setShowAccountDialog(false);
     await reloadReferenceData();
     setAccountId(created.id);
-    setSuccess("Conta financeira cadastrada.");
+    toast.success("Conta financeira cadastrada.");
   }
 
   async function createCategory(input: {
@@ -277,7 +278,7 @@ export function CashBookPage() {
     await cashBookApi.createCategory(input);
     setShowCategoryDialog(false);
     await reloadReferenceData();
-    setSuccess("Categoria cadastrada.");
+    toast.success("Categoria cadastrada.");
   }
 
   function setFilterDate(kind: "from" | "to", value: string) {
@@ -329,39 +330,41 @@ export function CashBookPage() {
   return (
     <main className="page-content cash-book-page">
       <section className="cash-book-toolbar">
-        <label className="cash-book-account-select">
-          <Icon name="bank" size={16} />
-          <span>Conta</span>
-          <select
-            aria-label="Conta financeira"
-            value={accountId}
-            onChange={(event) => {
-              setAccountId(event.target.value);
-              setPage(1);
-            }}
-            disabled={accounts.length === 0}
+        <div className="cash-book-account-group">
+          <div className="cash-book-account-main-row">
+            <div className="cash-book-account-select">
+              <Icon name="bank" size={16} />
+              <span>Conta</span>
+              <SelectField
+                ariaLabel="Conta financeira"
+                value={accountId}
+                placeholder="Selecione uma conta"
+                options={accounts.map((account) => ({ value: account.id, label: account.name }))}
+                onValueChange={(value) => { setAccountId(value); setPage(1); }}
+                disabled={accounts.length === 0}
+              />
+            </div>
+            <button
+              className="secondary-button"
+              onClick={() => setShowAccountDialog(true)}
+            >
+              <Icon name="plus" size={15} />
+              Nova conta
+            </button>
+          </div>
+          <button
+            className="account-manager-trigger"
+            onClick={() => setShowAccountManager(true)}
           >
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-          <Icon name="chevron" size={13} />
-        </label>
+            Gerenciar contas
+          </button>
+        </div>
         <DatePicker
           mode="month"
           ariaLabel="Competência do Livro Caixa"
           value={month}
           onChange={changeMonth}
         />
-        <button
-          className="secondary-button"
-          onClick={() => setShowAccountDialog(true)}
-        >
-          <Icon name="plus" size={15} />
-          Nova conta
-        </button>
         <button
           className="secondary-button"
           onClick={() => setShowCategoryDialog(true)}
@@ -378,18 +381,6 @@ export function CashBookPage() {
         </button>
       </section>
 
-      {success && (
-        <div className="cash-book-feedback success" role="status">
-          <Icon name="check" size={15} />
-          {success}
-          <button
-            aria-label="Dispensar mensagem"
-            onClick={() => setSuccess("")}
-          >
-            <Icon name="close" size={14} />
-          </button>
-        </div>
-      )}
       {error && (
         <div className="cash-book-feedback error" role="alert">
           <Icon name="close" size={15} />
@@ -459,41 +450,11 @@ export function CashBookPage() {
         </div>
         <label className="filter-select">
           <span>Tipo</span>
-          <select
-            aria-label="Filtrar tipo de movimentação"
-            value={type}
-            onChange={(event) => {
-              setType(event.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Todos</option>
-            <option value="income">Entrada</option>
-            <option value="expense">Saída</option>
-            <option value="transfer">Transferência</option>
-          </select>
-          <Icon name="chevron" size={13} />
+          <SelectField ariaLabel="Filtrar tipo de movimentação" value={type} onValueChange={(value) => { setType(value); setPage(1); }} options={[{ value: '', label: 'Todos' }, { value: 'income', label: 'Entrada' }, { value: 'expense', label: 'Saída' }, { value: 'transfer', label: 'Transferência' }]} />
         </label>
         <label className="filter-select">
           <span>Categoria</span>
-          <select
-            aria-label="Filtrar categoria"
-            value={categoryId}
-            onChange={(event) => {
-              setCategoryId(event.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Todas</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name === "Outros"
-                  ? `Outros (${category.nature === "income" ? "receita" : "despesa"})`
-                  : category.name}
-              </option>
-            ))}
-          </select>
-          <Icon name="chevron" size={13} />
+          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={(value) => { setCategoryId(value); setPage(1); }} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name === 'Outros' ? `Outros (${category.nature === 'income' ? 'receita' : 'despesa'})` : category.name }))]} />
         </label>
         <button className="cash-book-clear-filters" onClick={clearFilters}>
           Limpar filtros
@@ -566,6 +527,12 @@ export function CashBookPage() {
         <FinancialAccountDialog
           onClose={() => setShowAccountDialog(false)}
           onSave={createAccount}
+        />
+      )}
+      {showAccountManager && (
+        <FinancialAccountsManagerDialog
+          onClose={() => setShowAccountManager(false)}
+          onAccountsChanged={reloadReferenceData}
         />
       )}
       {showCategoryDialog && (

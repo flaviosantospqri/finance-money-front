@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Icon } from '../../components/ui/Icon';
+import { SelectField } from '../../components/ui/SelectField';
 import { DeleteForecastDialog } from '../../components/forecasts/DeleteForecastDialog';
 import { ForecastDetail } from '../../components/forecasts/ForecastDetail';
 import { ForecastForm } from '../../components/forecasts/ForecastForm';
@@ -19,13 +21,13 @@ import type {
 } from '../../features/cash-book/cashBookApi';
 import { formatCurrencyDecimal } from '../../lib/formatters';
 
-type Props = { month: string };
+type Props = { month: string; onManageRepasses: () => void };
 type FormState = {
   item: Forecast | null;
   scope: 'occurrence' | 'future';
 } | null;
 
-export function ForecastsPage({ month }: Props) {
+export function ForecastsPage({ month, onManageRepasses }: Props) {
   const [items, setItems] = useState<Forecast[]>([]),
     [summary, setSummary] = useState<ForecastSummary | null>(null);
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]),
@@ -44,10 +46,8 @@ export function ForecastsPage({ month }: Props) {
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
-    [success, setSuccess] = useState(''),
     [reconcileTarget, setReconcileTarget] = useState(''),
     [closeReason, setCloseReason] = useState('');
-  const [newDestination, setNewDestination] = useState('');
   const [pendingCancel, setPendingCancel] = useState<Forecast | null>(null);
 
   const load = useCallback(async () => {
@@ -106,7 +106,7 @@ export function ForecastsPage({ month }: Props) {
       if (id) await forecastsApi.update(id, input, scope);
       else await forecastsApi.create(input);
       setForm(null);
-      setSuccess(id ? 'Previsão atualizada.' : 'Previsão cadastrada.');
+      toast.success(id ? 'Previsão atualizada.' : 'Previsão cadastrada.');
       await load();
     } catch (reason) {
       setError(
@@ -120,11 +120,7 @@ export function ForecastsPage({ month }: Props) {
     try {
       await forecastsApi.delete(item.id, scope);
       setPendingCancel(null);
-      setSuccess(
-        scope === 'future'
-          ? 'Esta previsão e as próximas foram removidas da planilha.'
-          : 'Previsão removida da planilha.',
-      );
+      toast.success(scope === 'future' ? 'Esta previsão e as próximas foram removidas.' : 'Previsão removida.');
       await load();
     } catch (reason) {
       setError(
@@ -137,7 +133,7 @@ export function ForecastsPage({ month }: Props) {
   async function duplicate(item: Forecast) {
     try {
       await forecastsApi.duplicate(item.id);
-      setSuccess('Previsão duplicada.');
+      toast.success('Previsão duplicada.');
       await load();
     } catch (reason) {
       setError(
@@ -170,7 +166,7 @@ export function ForecastsPage({ month }: Props) {
     setBusy(true);
     try {
       await forecastsApi.reconcile(details.id, reconcileTarget);
-      setSuccess('Movimentação conciliada.');
+      toast.success('Movimentação conciliada.');
       setDetails(null);
       await load();
     } catch (reason) {
@@ -203,7 +199,7 @@ export function ForecastsPage({ month }: Props) {
       await forecastsApi.close(details.id, closeReason);
       setDetails(null);
       setCloseReason('');
-      setSuccess('Previsão encerrada com justificativa.');
+      toast.success('Previsão encerrada com justificativa.');
       await load();
     } catch (reason) {
       setError(
@@ -213,59 +209,6 @@ export function ForecastsPage({ month }: Props) {
       );
     }
   }
-  async function saveDistribution() {
-    try {
-      const saved = await forecastsApi.saveDistributions(
-        month,
-        distribution.map(({ id, percentage, valueType, value }) => ({
-          destinationId: id,
-          percentage,
-          valueType,
-          value,
-        })),
-      );
-      setDistribution(saved);
-      setSuccess('Distribuição salva.');
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Não foi possível salvar a distribuição.',
-      );
-    }
-  }
-  async function copyDistribution() {
-    const [year, mm] = month.split('-').map(Number);
-    const next = new Date(year, mm, 1);
-    const target = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-    try {
-      const copied = await forecastsApi.copyDistributions(month, target);
-      if (target === month) setDistribution(copied);
-      setSuccess(`Distribuição copiada para ${target}.`);
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Não foi possível copiar a distribuição.',
-      );
-    }
-  }
-  async function addDestination() {
-    if (!newDestination.trim()) return;
-    try {
-      await forecastsApi.createDestination(newDestination);
-      setNewDestination('');
-      await load();
-      setSuccess('Destinação adicionada.');
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Não foi possível adicionar a destinação.',
-      );
-    }
-  }
-
   return (
     <main className="page-content forecasts-page">
       <section className="cash-book-toolbar forecasts-toolbar">
@@ -277,14 +220,6 @@ export function ForecastsPage({ month }: Props) {
           Nova previsão
         </button>
       </section>
-      {success && (
-        <div className="cash-book-feedback success" role="status">
-          {success}
-          <button onClick={() => setSuccess('')} aria-label="Dispensar">
-            <Icon name="close" size={14} />
-          </button>
-        </div>
-      )}
       {error && (
         <div className="cash-book-feedback error" role="alert">
           {error}
@@ -334,33 +269,11 @@ export function ForecastsPage({ month }: Props) {
         </label>
         <label className="filter-select">
           <span>Categoria</span>
-          <select
-            aria-label="Filtrar categoria"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-          >
-            <option value="">Todas</option>
-            {categories.map((c) => (
-              <option value={c.id} key={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <SelectField ariaLabel="Filtrar categoria" value={categoryId} onValueChange={setCategoryId} options={[{ value: '', label: 'Todas' }, ...categories.map((category) => ({ value: category.id, label: category.name }))]} />
         </label>
         <label className="filter-select">
           <span>Situação</span>
-          <select
-            aria-label="Filtrar situação"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="">Todas</option>
-            <option value="pending">Pendente</option>
-            <option value="partial">Parcial</option>
-            <option value="realized">Realizado</option>
-            <option value="overdue">Vencido</option>
-            <option value="cancelled">Cancelado</option>
-          </select>
+          <SelectField ariaLabel="Filtrar situação" value={status} onValueChange={setStatus} options={[{ value: '', label: 'Todas' }, { value: 'pending', label: 'Pendente' }, { value: 'partial', label: 'Parcial' }, { value: 'realized', label: 'Realizado' }, { value: 'overdue', label: 'Vencido' }, { value: 'cancelled', label: 'Cancelado' }]} />
         </label>
       </section>
       <nav className="forecast-view-tabs" aria-label="Tipo de previsão">
@@ -375,7 +288,7 @@ export function ForecastsPage({ month }: Props) {
           className={view === 'income' ? 'active' : ''}
           onClick={() => setView('income')}
         >
-          Recebimentos e divisão{' '}
+          Recebimentos{' '}
           <span>{items.filter((item) => item.kind === 'income').length}</span>
         </button>
         <button
@@ -413,92 +326,17 @@ export function ForecastsPage({ month }: Props) {
                 <section className="panel forecast-distribution">
                   <header className="panel-heading">
                     <div>
-                      <h2>Divisão das receitas</h2>
+                      <h2>Repasses desta competência</h2>
                       <p>
-                        Repasses vigentes neste mês. Salvar aqui altera somente esta competência.
+                        Consulte os valores por destinação na tabela. As regras globais e ajustes mensais ficam em Repasses.
                       </p>
                     </div>
                     <div className="distribution-actions">
-                      <button
-                        className="secondary-button"
-                        onClick={() => void copyDistribution()}
-                      >
-                        Copiar para o próximo mês
-                      </button>
-                      <button
-                        className="secondary-button"
-                        onClick={() => void saveDistribution()}
-                      >
-                        Salvar distribuição
+                      <button className="secondary-button" onClick={onManageRepasses}>
+                        Gerenciar repasses
                       </button>
                     </div>
                   </header>
-                  <div className="distribution-grid">
-                    {distribution.map((row) => (
-                      <label key={row.id} className="distribution-card">
-                        <span>{row.name}</span>
-                        <div>
-                          <select
-                            aria-label={`Tipo de repasse para ${row.name}`}
-                            value={row.valueType}
-                            onChange={(e) =>
-                              setDistribution((current) =>
-                                current.map((item) => item.id === row.id
-                                  ? { ...item, valueType: e.target.value as 'percentage' | 'fixed' }
-                                  : item),
-                              )
-                            }
-                          >
-                            <option value="percentage">%</option>
-                            <option value="fixed">R$</option>
-                          </select>
-                          <input
-                            aria-label={`Valor do repasse para ${row.name}`}
-                            type="number"
-                            min="0"
-                            max={row.valueType === 'percentage' ? '100' : undefined}
-                            step="0.01"
-                            value={row.value}
-                            onChange={(e) =>
-                              setDistribution((current) =>
-                                current.map((item) =>
-                                  item.id === row.id
-                                    ? { ...item, value: e.target.value, percentage: item.valueType === 'percentage' ? e.target.value : '0' }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                          <span>%</span>
-                        </div>
-                        <small>
-                          Orçamento {formatCurrencyDecimal(row.budget)} ·
-                          Consumido {formatCurrencyDecimal(row.consumed)}
-                        </small>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="distribution-total">
-                    Total:{' '}
-                    {distribution
-                      .reduce((sum, row) => sum + (row.valueType === 'percentage' ? Number(row.value) : 0), 0)
-                      .toFixed(2)}
-                    %
-                  </p>
-                  <div className="distribution-add">
-                    <input
-                      aria-label="Nova destinação"
-                      placeholder="Adicionar destinação"
-                      value={newDestination}
-                      onChange={(e) => setNewDestination(e.target.value)}
-                    />
-                    <button
-                      className="secondary-button"
-                      onClick={() => void addDestination()}
-                    >
-                      Adicionar
-                    </button>
-                  </div>
                 </section>
               )}
               <ForecastTable

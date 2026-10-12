@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { DatePicker } from '../ui/DatePicker';
 import { Icon } from '../ui/Icon';
+import { SelectField } from '../ui/SelectField';
 import type {
   FinancialAccount,
   FinancialCategory,
@@ -115,19 +116,13 @@ export function ForecastForm({
             <legend>Dados da previsão</legend>
             <label className="form-field">
               <span>Tipo</span>
-              <select
-                value={kind}
-                onChange={(e) => {
-                  const next = e.target.value as 'income' | 'expense';
+              <SelectField ariaLabel="Tipo da previsão" value={kind} options={[{ value: 'income', label: 'Receita' }, { value: 'expense', label: 'Despesa' }]} onValueChange={(value) => {
+                  const next = value as 'income' | 'expense';
                   setKind(next);
                   setCategoryId(
                     categories.find((c) => c.nature === next)?.id ?? '',
                   );
-                }}
-              >
-                <option value="income">Receita</option>
-                <option value="expense">Despesa</option>
-              </select>
+                }} />
             </label>
             <label className="form-field">
               <span>Descrição</span>
@@ -157,64 +152,23 @@ export function ForecastForm({
             </label>
             <label className="form-field">
               <span>Categoria</span>
-              <select
-                required
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-              >
-                <option value="">Selecione</option>
-                {choices.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <SelectField ariaLabel="Categoria" value={categoryId} placeholder="Selecione" options={choices.map((category) => ({ value: category.id, label: category.name }))} onValueChange={setCategoryId} />
             </label>
             <label className="form-field">
               <span>Conta prevista (opcional)</span>
-              <select
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-              >
-                <option value="">Sem conta definida</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+              <SelectField ariaLabel="Conta prevista" value={accountId} options={[{ value: '', label: 'Sem conta definida' }, ...accounts.map((account) => ({ value: account.id, label: account.name }))]} onValueChange={setAccountId} />
             </label>
             {kind === 'expense' && (
               <label className="form-field">
                 <span>Destinação planejada (opcional)</span>
-                <select
-                  value={destinationId}
-                  onChange={(e) => setDestinationId(e.target.value)}
-                >
-                  <option value="">Sem destinação</option>
-                  {destinations.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                <SelectField ariaLabel="Destinação planejada" value={destinationId} options={[{ value: '', label: 'Sem destinação' }, ...destinations.map((destination) => ({ value: destination.id, label: destination.name }))]} onValueChange={setDestinationId} />
               </label>
             )}
             {!item && (
               <>
                 <label className="form-field">
                   <span>Recorrência</span>
-                  <select
-                    value={recurrence}
-                    onChange={(e) =>
-                      setRecurrence(e.target.value as typeof recurrence)
-                    }
-                  >
-                    <option value="once">Única</option>
-                    <option value="monthly">Mensal</option>
-                    <option value="weekly">Semanal</option>
-                    <option value="yearly">Anual</option>
-                  </select>
+                  <SelectField ariaLabel="Recorrência" value={recurrence} onValueChange={(value) => setRecurrence(value as typeof recurrence)} options={[{ value: 'once', label: 'Única' }, { value: 'monthly', label: 'Mensal' }, { value: 'weekly', label: 'Semanal' }, { value: 'yearly', label: 'Anual' }]} />
                 </label>
                 {recurrence !== 'once' && (
                   <label className="form-field">
@@ -235,15 +189,7 @@ export function ForecastForm({
             {item && item.occurrenceCount > 1 && (
               <label className="form-field">
                 <span>Aplicar edição</span>
-                <select
-                  value={editScope}
-                  onChange={(e) =>
-                    setEditScope(e.target.value as typeof editScope)
-                  }
-                >
-                  <option value="occurrence">Somente esta ocorrência</option>
-                  <option value="future">Esta e as próximas</option>
-                </select>
+                <SelectField ariaLabel="Aplicar edição" value={editScope} onValueChange={(value) => setEditScope(value as typeof editScope)} options={[{ value: 'occurrence', label: 'Somente esta ocorrência' }, { value: 'future', label: 'Esta e as próximas' }]} />
               </label>
             )}
             <label className="form-field">

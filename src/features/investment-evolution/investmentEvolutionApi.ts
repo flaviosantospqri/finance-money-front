@@ -50,6 +50,6 @@ export type EvolutionFilters = {
 export const investmentEvolutionApi = {
   getMonthly: (filters: EvolutionFilters) => request<MonthlyInvestmentEvolution[]>(`/investment-evolution/monthly?${query(filters)}`),
   getSummary: (filters: EvolutionFilters) => request<InvestmentEvolutionSummary>(`/investment-evolution/summary?${query(filters)}`),
-  getAccounts: () => request<FinancialAccount[]>("/financial-accounts"),
+  getAccounts: () => request<FinancialAccount[]>("/financial-accounts?active=true"),
   getApplications: () => request<InvestmentApplication[]>("/investments"),
 };

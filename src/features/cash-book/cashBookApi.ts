@@ -107,6 +107,7 @@ function queryString(values: Record<string, string | number | undefined>) {
 export const cashBookApi = {
   getAccounts: () =>
     request<FinancialAccount[]>("/financial-accounts?active=true"),
+  getAllAccounts: () => request<FinancialAccount[]>("/financial-accounts"),
   createAccount: (input: {
     name: string;
     type: AccountType;
@@ -118,6 +119,17 @@ export const cashBookApi = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  updateAccount: (id: string, input: Partial<{
+    name: string;
+    type: AccountType;
+    institution: string | null;
+    openingBalance: string;
+    referenceDate: string;
+    active: boolean;
+  }>) => request<FinancialAccount>(`/financial-accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  }),
   getCategories: () =>
     request<FinancialCategory[]>("/financial-categories?active=true"),
   createCategory: (input: { name: string; nature: CategoryNature }) =>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Forecast } from '../../features/forecasts/forecastsApi';
+import { SelectField } from '../ui/SelectField';
 
 export function DeleteForecastDialog({
   item,
@@ -30,13 +31,7 @@ export function DeleteForecastDialog({
         {item.occurrenceCount > 1 ? (
           <label className="form-field">
               <span>Aplicar exclusão</span>
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value as typeof scope)}
-            >
-              <option value="occurrence">Excluir somente esta ocorrência</option>
-              <option value="future">Excluir esta e as próximas</option>
-            </select>
+            <SelectField ariaLabel="Aplicar exclusão" value={scope} onValueChange={(value) => setScope(value as typeof scope)} options={[{ value: 'occurrence', label: 'Excluir somente esta ocorrência' }, { value: 'future', label: 'Excluir esta e as próximas' }]} />
           </label>
         ) : (
           <p>Esta linha será removida da planilha de previsões.</p>

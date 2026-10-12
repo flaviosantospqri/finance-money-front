@@ -5,6 +5,7 @@ import type {
 } from "../../features/investments/investmentsApi";
 import { DatePicker } from "../ui/DatePicker";
 import { Icon } from "../ui/Icon";
+import { SelectField } from "../ui/SelectField";
 
 type Props = {
   application: InvestmentApplication | null;
@@ -69,18 +70,7 @@ export function InvestmentApplicationDialog({
             </label>
             <label className="form-field">
               <span>Conta de investimento</span>
-              <select
-                name="accountId"
-                required
-                defaultValue={application?.accountId ?? accounts[0]?.id ?? ""}
-              >
-                <option value="">Selecione</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
+              <SelectField name="accountId" required ariaLabel="Conta de investimento" defaultValue={application?.accountId ?? accounts[0]?.id ?? ''} options={accounts.map((account) => ({ value: account.id, label: account.name }))} />
             </label>
             <label className="form-field">
               <span>Tipo de investimento</span>

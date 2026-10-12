@@ -5,6 +5,7 @@ import type {
 } from "../../features/investments/investmentsApi";
 import { DatePicker } from "../ui/DatePicker";
 import { Icon } from "../ui/Icon";
+import { SelectField } from "../ui/SelectField";
 
 export type InvestmentMovementDraft = {
   type: "contribution" | "withdrawal" | "income" | "adjustment";
@@ -82,21 +83,7 @@ export function InvestmentMovementDialog({
           <fieldset disabled={saving}>
             <label className="form-field">
               <span>Tipo</span>
-              <select
-                value={draft.type}
-                disabled={Boolean(editing)}
-                onChange={(event) =>
-                  onChange({
-                    ...draft,
-                    type: event.target.value as InvestmentMovementDraft["type"],
-                  })
-                }
-              >
-                <option value="contribution">Aporte</option>
-                <option value="withdrawal">Resgate</option>
-                <option value="income">Rendimento</option>
-                <option value="adjustment">Ajuste justificado</option>
-              </select>
+              <SelectField ariaLabel="Tipo de movimentação" value={draft.type} disabled={Boolean(editing)} onValueChange={(value) => onChange({ ...draft, type: value as InvestmentMovementDraft['type'] })} options={[{ value: 'contribution', label: 'Aporte' }, { value: 'withdrawal', label: 'Resgate' }, { value: 'income', label: 'Rendimento' }, { value: 'adjustment', label: 'Ajuste justificado' }]} />
             </label>
             <label className="form-field">
               <span>Data da movimentação</span>
@@ -113,20 +100,7 @@ export function InvestmentMovementDialog({
                   Conta financeira de{" "}
                   {draft.type === "contribution" ? "origem" : "destino"}
                 </span>
-                <select
-                  required
-                  value={draft.sourceAccountId}
-                  onChange={(event) =>
-                    onChange({ ...draft, sourceAccountId: event.target.value })
-                  }
-                >
-                  <option value="">Selecione</option>
-                  {cashAccounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
+                <SelectField ariaLabel="Conta financeira" value={draft.sourceAccountId} placeholder="Selecione" options={cashAccounts.map((account) => ({ value: account.id, label: account.name }))} onValueChange={(sourceAccountId) => onChange({ ...draft, sourceAccountId })} />
               </label>
             )}
             <label className="form-field">

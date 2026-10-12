@@ -25,7 +25,7 @@ const pageTitles: Record<PageKey, { title: string; subtitle: string }> = {
   },
   investments: {
     title: 'Investimentos',
-    subtitle: 'Acompanhe a evolução dos investimentos da empresa',
+    subtitle: 'Acompanhe aplicações e evolução do patrimônio',
   },
   'investment-evolution': {
     title: 'Evolução dos Investimentos',
@@ -110,7 +110,7 @@ export function TopHeader({
           </button>
         </div>
 
-        {!['profile', 'cash-book', 'forecasts', 'repasses', 'investments', 'investment-evolution'].includes(activePage) && (
+        {activePage === 'cash-flow' && (
           <button className="primary-button" onClick={onNewTransaction}>
             <Icon name="plus" size={17} />
             <span>Novo lançamento</span>

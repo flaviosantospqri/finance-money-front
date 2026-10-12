@@ -50,9 +50,9 @@ export function ForecastTable({
             : 'Nenhuma conta a pagar nesta competência.'}
         </div>
       ) : (
-        <div className="cash-book-table-scroll">
+        <div className="table-scroll cash-book-table-scroll">
           <table
-            className={`cash-book-table forecasts-table ${mode}`}
+            className={`transactions-table cash-book-table forecasts-table ${mode}`}
             style={{ '--forecast-destination-width': `${35 / Math.max(visibleDestinations.length, 1)}%` } as CSSProperties}
           >
             {mode === 'income' && (
@@ -155,7 +155,7 @@ export function ForecastTable({
                       {visibleDestinations.map((row) => (
                         <td className="forecast-table-money" key={row.id}>
                           {formatCurrencyDecimal(
-                            allocatedAmount(item.amount, row.percentage),
+                            row.valueType === 'fixed' ? row.value : allocatedAmount(item.amount, row.value),
                           )}
                         </td>
                       ))}
