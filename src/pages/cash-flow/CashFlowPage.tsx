@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { TransactionsTable } from '../../components/cash-flow/TransactionsTable'
-import { Icon } from '../../components/ui/Icon'
+import { SelectField } from '../../components/ui/SelectField'
 import type { Transaction, TransactionStatus, TransactionType } from '../../types'
 
 type CashFlowPageProps = {
@@ -24,8 +24,8 @@ export function CashFlowPage({ transactions, onEdit, onDelete, onView, onConfirm
     <div className="page-content cash-flow-page">
       <div className="cash-flow-tools">
         <label className="search-field"><span aria-hidden="true">⌕</span><input aria-label="Buscar lançamentos" placeholder="Buscar por descrição, categoria ou conta..." value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-        <label className="filter-select"><span>Tipo</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as 'Todos' | TransactionType)}><option>Todos</option><option>Entrada</option><option>Saída</option></select><Icon name="chevron" size={13} /></label>
-        <label className="filter-select"><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'Todos' | TransactionStatus)}><option>Todos</option><option>Confirmado</option><option>Pendente</option></select><Icon name="chevron" size={13} /></label>
+        <label className="filter-select"><span>Tipo</span><SelectField ariaLabel="Filtrar tipo" value={typeFilter} onValueChange={(value) => setTypeFilter(value as 'Todos' | TransactionType)} options={[{ value: 'Todos', label: 'Todos' }, { value: 'Entrada', label: 'Entrada' }, { value: 'Saída', label: 'Saída' }]} /></label>
+        <label className="filter-select"><span>Status</span><SelectField ariaLabel="Filtrar status" value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'Todos' | TransactionStatus)} options={[{ value: 'Todos', label: 'Todos' }, { value: 'Confirmado', label: 'Confirmado' }, { value: 'Pendente', label: 'Pendente' }]} /></label>
       </div>
       <TransactionsTable transactions={filteredTransactions} showActions onEdit={onEdit} onDelete={onDelete} onView={onView} onConfirm={onConfirm} />
     </div>

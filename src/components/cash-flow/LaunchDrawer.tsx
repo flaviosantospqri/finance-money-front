@@ -4,6 +4,7 @@ import type { Transaction, TransactionStatus, TransactionType } from '../../type
 import { defaultTransactionCategory, transactionCategoryGroups } from '../../data/transactionCategories'
 import { Icon } from '../ui/Icon'
 import { DatePicker } from '../ui/DatePicker'
+import { SelectField } from '../ui/SelectField'
 
 export type TransactionInput = Omit<Transaction, 'id'>
 type DrawerMode = 'create' | 'edit' | 'view'
@@ -77,9 +78,9 @@ export function LaunchDrawer({ mode, transaction, onClose, onSave }: LaunchDrawe
               <label className="form-field"><span>Vencimento</span><DatePicker ariaLabel="Vencimento" value={dueDate} onChange={setDueDate} disabled={isReadOnly} /></label>
             </div>
 
-            <label className="form-field"><span>Categoria</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{transactionCategoryGroups.map((group) => <optgroup key={group.label} label={group.label}>{group.categories.map((item) => <option key={item}>{item}</option>)}</optgroup>)}</select></label>
-            <label className="form-field"><span>Conta Financeira</span><select value={account} onChange={(event) => setAccount(event.target.value)}>{accounts.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="form-field"><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as TransactionStatus)}><option value="Confirmado">Confirmado / Recebido</option><option value="Pendente">Pendente</option></select></label>
+            <label className="form-field"><span>Categoria</span><SelectField ariaLabel="Categoria" value={category} onValueChange={setCategory} options={transactionCategoryGroups.flatMap((group) => group.categories.map((item) => ({ value: item, label: item })))} /></label>
+            <label className="form-field"><span>Conta Financeira</span><SelectField ariaLabel="Conta Financeira" value={account} onValueChange={setAccount} options={accounts.map((item) => ({ value: item, label: item }))} /></label>
+            <label className="form-field"><span>Status</span><SelectField ariaLabel="Status" value={status} onValueChange={(value) => setStatus(value as TransactionStatus)} options={[{ value: 'Confirmado', label: 'Confirmado / Recebido' }, { value: 'Pendente', label: 'Pendente' }]} /></label>
             <label className="form-field"><span>Observações</span><textarea rows={3} maxLength={300} value={observations} onChange={(event) => setObservations(event.target.value)} placeholder="Adicione detalhes importantes sobre este lançamento..." /></label>
           </fieldset>
 

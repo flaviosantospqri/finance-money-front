@@ -302,40 +302,42 @@ export function InvestmentsPage({ month }: { month: string }) {
           <span>Aplicação</span>
           <SelectField ariaLabel="Filtrar aplicação" value={applicationId} options={[{ value: '', label: 'Todas as aplicações' }, ...visibleApplications.map((app) => ({ value: app.id, label: app.name }))]} onValueChange={setApplicationId} />
         </div>
-        <button className="secondary-button" onClick={() => setShowAccountDialog(true)}>
-          <Icon name="plus" size={15} />
-          Nova conta de investimento
-        </button>
-        <button
-          className="secondary-button"
-          disabled={!investmentAccounts.length}
-          onClick={() => {
-            setEditingApplication(null);
-            setApplicationDate(today());
-            setShowApplication(true);
-          }}
-        >
-          <Icon name="plus" size={15} />
-          Nova aplicação
-        </button>
-        <button
-          className="primary-button"
-          disabled={!selectedApplication || !selectedApplication.active}
-          onClick={() => {
-            setEditingMovement(null);
-            setMovementDraft({
-              type: "contribution",
-              amount: "",
-              occurredAt: today(),
-              origin: "",
-              notes: "",
-              sourceAccountId: cashAccounts[0]?.id ?? "",
-            });
-          }}
-        >
-          <Icon name="plus" size={16} />
-          Movimentação
-        </button>
+        <div className="investments-toolbar-actions">
+          <button className="secondary-button" onClick={() => setShowAccountDialog(true)}>
+            <Icon name="plus" size={15} />
+            Nova conta de investimento
+          </button>
+          <button
+            className="secondary-button"
+            disabled={!investmentAccounts.length}
+            onClick={() => {
+              setEditingApplication(null);
+              setApplicationDate(today());
+              setShowApplication(true);
+            }}
+          >
+            <Icon name="plus" size={15} />
+            Nova aplicação
+          </button>
+          <button
+            className="primary-button"
+            disabled={!selectedApplication || !selectedApplication.active}
+            onClick={() => {
+              setEditingMovement(null);
+              setMovementDraft({
+                type: "contribution",
+                amount: "",
+                occurredAt: today(),
+                origin: "",
+                notes: "",
+                sourceAccountId: cashAccounts[0]?.id ?? "",
+              });
+            }}
+          >
+            <Icon name="plus" size={16} />
+            Movimentação
+          </button>
+        </div>
       </div>
       {error && (
         <div className="cash-book-feedback error" role="alert">
@@ -388,14 +390,16 @@ export function InvestmentsPage({ month }: { month: string }) {
             </p>
             <button
               className="primary-button"
-              disabled={!investmentAccounts.length}
               onClick={() => {
-                setApplicationDate(today());
-                setShowApplication(true);
+                if (!investmentAccounts.length) setShowAccountDialog(true);
+                else {
+                  setApplicationDate(today());
+                  setShowApplication(true);
+                }
               }}
             >
               <Icon name="plus" size={15} />
-              {investmentAccounts.length ? "Cadastrar aplicação" : "Cadastre uma conta de investimento primeiro"}
+              {investmentAccounts.length ? "Cadastrar aplicação" : "Cadastrar conta de investimento"}
             </button>
           </div>
         ) : (
