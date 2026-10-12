@@ -363,8 +363,9 @@ button { color: inherit; }
 .cash-book-table .description-cell strong { max-width: 320px; }
 .cash-book-table-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .cash-book-reorder-hint { color: var(--text-soft); font-size: 11px; white-space: nowrap; }
-.cash-book-date-with-handle { display: flex; align-items: center; gap: 8px; }
-.cash-book-drag-handle, .cash-book-drag-spacer { display: inline-flex; flex: 0 0 16px; width: 16px; align-items: center; justify-content: center; }
+.cash-book-table th:first-child { padding-left: 44px !important; }
+.cash-book-table td.cash-book-date-with-handle { position: relative; display: table-cell; padding-left: 44px !important; }
+.cash-book-drag-handle, .cash-book-drag-spacer { position: absolute; left: 27px; top: 50%; display: inline-flex; width: 16px; align-items: center; justify-content: center; transform: translateY(-50%); }
 .cash-book-drag-handle { height: 28px; padding: 0; border: 0; border-radius: 5px; color: var(--text-soft); background: transparent; cursor: grab; font-size: 18px; line-height: 1; touch-action: none; }
 .cash-book-drag-handle:hover { color: var(--text); background: var(--table-head); }
 .cash-book-drag-handle:active { cursor: grabbing; }
