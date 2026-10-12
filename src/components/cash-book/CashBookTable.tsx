@@ -79,7 +79,7 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
       </div>
       <div className="table-scroll">
         <table className="transactions-table cash-book-table">
-          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria / repasse</th><th className="cash-book-money-heading">Entrada</th><th className="cash-book-money-heading">Saída</th><th className="cash-book-balance-heading">Saldo</th><th className="actions-heading-cell">Ações</th></tr></thead>
+          <thead><tr><th>Data</th><th>Descrição</th><th>Origem / Categoria</th><th className="cash-book-money-heading">Entrada</th><th className="cash-book-money-heading">Saída</th><th className="cash-book-balance-heading">Saldo</th><th className="actions-heading-cell">Ações</th></tr></thead>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragCancel={() => setDragging(false)} onDragEnd={finishDrag}>
             <SortableContext items={entries.map((entry) => entry.id)} strategy={verticalListSortingStrategy}>
               <tbody className={dragging ? 'cash-book-dragging' : ''}>
