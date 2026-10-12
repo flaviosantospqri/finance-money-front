@@ -5,11 +5,13 @@ import { CSS } from '@dnd-kit/utilities'
 import type { CashBookEntry, CashBookPageResult } from '../../features/cash-book/cashBookApi'
 import { formatCurrencyDecimal, formatDate } from '../../lib/formatters'
 import { Icon } from '../ui/Icon'
+import { SelectField } from '../ui/SelectField'
 
 type CashBookTableProps = {
   entries: CashBookEntry[]
   pagination: CashBookPageResult['pagination'] | null
   onPageChange: (page: number) => void
+  onPageSizeChange: (pageSize: number) => void
   onView: (entry: CashBookEntry) => void
   onEdit: (entry: CashBookEntry) => void
   onDelete: (entry: CashBookEntry) => void
@@ -59,7 +61,7 @@ function SortableEntryRow({ entry, canReorder, isBusy, onView, onEdit, onDelete 
   )
 }
 
-export function CashBookTable({ entries, pagination, onPageChange, onView, onEdit, onDelete, canReorder, isReordering, isRefreshing, onReorder }: CashBookTableProps) {
+export function CashBookTable({ entries, pagination, onPageChange, onPageSizeChange, onView, onEdit, onDelete, canReorder, isReordering, isRefreshing, onReorder }: CashBookTableProps) {
   const [dragging, setDragging] = useState(false)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -78,12 +80,19 @@ export function CashBookTable({ entries, pagination, onPageChange, onView, onEdi
     <section className="panel cash-book-table-panel" aria-busy={isRefreshing || isReordering}>
       <div className="cash-book-table-heading">
         <div><h2>Movimentações</h2><p>Ordem padrão por criação; saldo recalculado conforme a ordem exibida.</p></div>
-        <div className="cash-book-table-status-area">
-          {(isRefreshing || isReordering) && <span className="cash-book-request-status" role="status" aria-live="polite"><span className="loading-spinner" />{isReordering ? 'Salvando ordem…' : 'Atualizando movimentações…'}</span>}
-          {!isRefreshing && !isReordering && canReorder && entries.length > 1 && <span className="cash-book-reorder-hint">Arraste pelo ⠿ para reorganizar</span>}
+        <div className="cash-book-table-tools">
+          <label className="cash-book-page-size">
+            <span>Exibir</span>
+            <SelectField ariaLabel="Movimentações por página" value={String(pagination?.pageSize ?? 10)} onValueChange={(value) => onPageSizeChange(Number(value))} options={[10, 50, 100].map((size) => ({ value: String(size), label: String(size) }))} />
+            <span>por página</span>
+          </label>
+          <div className="cash-book-table-status-area">
+            {(isRefreshing || isReordering) && <span className="cash-book-request-status" role="status" aria-live="polite"><span className="loading-spinner" />{isReordering ? 'Salvando ordem…' : 'Atualizando movimentações…'}</span>}
+            {!isRefreshing && !isReordering && canReorder && entries.length > 1 && <span className="cash-book-reorder-hint">Arraste pelo ⠿ para reorganizar</span>}
+          </div>
         </div>
       </div>
-      <div className="table-scroll">
+      <div className="table-scroll cash-book-table-scroll">
         <table className="transactions-table cash-book-table">
           <thead><tr><th>Data</th><th>Descrição</th><th>Origem / Categoria</th><th className="cash-book-money-heading">Entrada</th><th className="cash-book-money-heading">Saída</th><th className="cash-book-balance-heading">Saldo</th><th className="actions-heading-cell">Ações</th></tr></thead>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragCancel={() => setDragging(false)} onDragEnd={finishDrag}>

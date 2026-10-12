@@ -93,6 +93,7 @@ export function CashBookPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [drawer, setDrawer] = useState<DrawerState>(null);
   const [pendingDelete, setPendingDelete] = useState<CashBookEntry | null>(
     null,
@@ -107,6 +108,7 @@ export function CashBookPage() {
     accountId,
     month,
     page,
+    pageSize,
     search,
     type,
     categoryId,
@@ -171,7 +173,7 @@ export function CashBookPage() {
         accountId,
         month,
         page,
-        pageSize: 10,
+        pageSize,
         search,
         type: type || undefined,
         categoryId: categoryId || undefined,
@@ -200,6 +202,7 @@ export function CashBookPage() {
     accountId,
     month,
     page,
+    pageSize,
     search,
     type,
     categoryId,
@@ -552,6 +555,7 @@ export function CashBookPage() {
             entries={pageData.entries}
             pagination={pageData.pagination}
             onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
             onView={(entry) => setDrawer({ mode: "view", entry })}
             onEdit={(entry) => setDrawer({ mode: "edit", entry })}
             onDelete={setPendingDelete}

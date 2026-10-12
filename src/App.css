@@ -352,6 +352,10 @@ button { color: inherit; }
 .cash-book-table-heading h2 { margin: 0; color: var(--text); font-size: 16px; }
 .cash-book-table-heading p { margin: 4px 0 0; color: var(--text-soft); font-size: 12px; }
 .cash-book-table { min-width: 960px; }
+.cash-book-table-scroll { max-height: max(180px, calc(100vh - 420px)); overflow: auto; overscroll-behavior: contain; scrollbar-color: var(--panel-border) transparent; scrollbar-width: thin; }
+.cash-book-table-scroll .cash-book-table thead th { position: sticky; top: 0; z-index: 2; }
+.cash-book-table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.cash-book-table-scroll::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 99px; background: var(--panel-border); background-clip: content-box; }
 .cash-book-table th { height: 42px; }
 .cash-book-table:not(.forecasts-table):not(.investment-evolution-table) th:nth-child(1) { width: 10%; }
 .cash-book-table:not(.forecasts-table):not(.investment-evolution-table) th:nth-child(2) { width: 25%; }
@@ -362,6 +366,9 @@ button { color: inherit; }
 .cash-book-table td { height: 58px; }
 .cash-book-table .description-cell strong { max-width: 320px; }
 .cash-book-table-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cash-book-table-tools { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.cash-book-page-size { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-size: 11px; white-space: nowrap; }
+.cash-book-page-size .select-field-trigger { width: 68px; min-height: 32px; padding: 0 8px; font-size: 12px; }
 .cash-book-table-status-area { min-height: 20px; display: flex; align-items: center; justify-content: flex-end; }
 .cash-book-request-status { display: inline-flex; align-items: center; gap: 8px; color: var(--text-soft); font-size: 11px; white-space: nowrap; }
 .cash-book-request-status .loading-spinner { width: 14px; height: 14px; flex: 0 0 14px; }
