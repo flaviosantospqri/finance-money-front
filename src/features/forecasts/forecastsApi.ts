@@ -19,6 +19,8 @@ export type Forecast = {
   accountName: string | null;
   destinationId: string | null;
   destinationName: string | null;
+  groupId: string | null;
+  groupName: string | null;
   notes: string | null;
   realized: string;
   pending: string;
@@ -69,7 +71,9 @@ export type ForecastInput = {
   occurrenceCount: number;
   destinationId?: string;
   notes?: string;
+  groupId?: string | null;
 };
+export type ForecastGroup = { id: string; name: string };
 export type FinancialRepasse = {
   id: string;
   destinationId: string;
@@ -110,6 +114,21 @@ function query(values: Record<string, string | undefined>) {
   return params.toString();
 }
 export const forecastsApi = {
+  groups: () => request<ForecastGroup[]>('/financial-forecasts/groups'),
+  createGroup: (name: string) =>
+    request<ForecastGroup>('/financial-forecasts/groups', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+  updateGroup: (id: string, name: string) =>
+    request<ForecastGroup>(`/financial-forecasts/groups/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    }),
+  deleteGroup: (id: string) =>
+    request<{ deleted: boolean }>(`/financial-forecasts/groups/${id}`, {
+      method: 'DELETE',
+    }),
   getAccounts: () =>
     request<FinancialAccount[]>('/financial-accounts?active=true'),
   getCategories: () =>

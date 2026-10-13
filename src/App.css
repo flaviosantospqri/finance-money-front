@@ -615,6 +615,18 @@ button { color: inherit; }
 .forecast-view-tabs button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 7px; color: var(--text-soft); background: transparent; cursor: pointer; font-weight: 600; }
 .forecast-view-tabs button.active { color: var(--text); background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border); }
 .forecast-view-tabs button span { margin-left: 5px; color: var(--text-faint); font-size: 12px; }
+.forecast-view-tab-item { display: inline-flex; align-items: center; gap: 2px; padding-right: 4px; border-radius: 7px; }
+.forecast-view-tab-item.active { background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border); }
+.forecast-view-tab-item > button:first-child { padding-inline: 10px; }
+.forecast-view-tab-item > button:first-child.active { background: transparent; box-shadow: none; }
+.forecast-tab-action { width: 26px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 5px; color: var(--text-faint); background: transparent; cursor: pointer; }
+.forecast-tab-action:hover { color: var(--text); background: var(--surface); }
+.forecast-add-tab { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.forecast-group-dialog .form-field { margin-top: 18px; }
+.forecast-group-dialog .form-field input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); font: inherit; }
+.forecast-group-warning { margin-top: 14px !important; padding: 10px; border: 1px solid var(--red-soft); border-radius: 8px; color: var(--red) !important; background: var(--surface-muted); font-size: 12px !important; }
+.forecast-group-actions { align-items: center; flex-wrap: wrap; }
+.forecast-group-actions > span { flex: 1; }
 .forecast-empty-state { padding: 24px 16px; color: var(--text-soft); text-align: center; }
 .forecasts-list-panel .cash-book-table-heading { padding-bottom: 12px; }
 .cash-book-table-scroll { width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }

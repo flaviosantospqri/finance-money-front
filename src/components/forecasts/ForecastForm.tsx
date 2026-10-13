@@ -7,7 +7,7 @@ import type {
   FinancialAccount,
   FinancialCategory,
 } from '../../features/cash-book/cashBookApi';
-import type { Forecast, ForecastInput } from '../../features/forecasts/forecastsApi';
+import type { Forecast, ForecastGroup, ForecastInput } from '../../features/forecasts/forecastsApi';
 import { currentDate, normalizeMoney } from './forecastUtils';
 
 export function ForecastForm({
@@ -15,6 +15,8 @@ export function ForecastForm({
   scope,
   accounts,
   categories,
+  groups,
+  defaultGroupId,
   busy,
   onClose,
   onSave,
@@ -23,6 +25,8 @@ export function ForecastForm({
   scope: 'occurrence' | 'future';
   accounts: FinancialAccount[];
   categories: FinancialCategory[];
+  groups: ForecastGroup[];
+  defaultGroupId?: string;
   busy: boolean;
   onClose: () => void;
   onSave: (
@@ -40,6 +44,7 @@ export function ForecastForm({
     [categoryId, setCategoryId] = useState(item?.categoryId ?? ''),
     [accountId, setAccountId] = useState(item?.accountId ?? ''),
     [destinationId, setDestinationId] = useState(item?.destinationId ?? ''),
+    [groupId, setGroupId] = useState(item?.groupId ?? defaultGroupId ?? ''),
     [recurrence, setRecurrence] = useState<
       'once' | 'monthly' | 'weekly' | 'yearly'
     >('once'),
@@ -70,6 +75,7 @@ export function ForecastForm({
         categoryId,
         accountId: accountId || undefined,
         destinationId: kind === 'expense' ? selectedCategory?.destinationId : destinationId || undefined,
+        groupId: kind === 'expense' ? groupId || null : undefined,
         recurrence,
         occurrenceCount: recurrence === 'once' ? 1 : occurrenceCount,
         notes: notes.trim() || undefined,
@@ -159,6 +165,13 @@ export function ForecastForm({
             </label>
             {kind === 'expense' && selectedCategory && (
               <p className="cash-book-feedback">Esta despesa será acompanhada no repasse <strong>{selectedCategory.destinationName}</strong>.</p>
+            )}
+            {kind === 'expense' && (
+              <label className="form-field">
+                <span>Aba de contas a pagar</span>
+                <SelectField ariaLabel="Aba de contas a pagar" value={groupId} onValueChange={setGroupId} options={[{ value: '', label: 'Contas a pagar' }, ...groups.map((group) => ({ value: group.id, label: group.name }))]} />
+                <small>Use uma aba para separar despesas, como contas adicionais.</small>
+              </label>
             )}
             {!item && (
               <>

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Icon } from '../../components/ui/Icon';
 import { SelectField } from '../../components/ui/SelectField';
 import { DeleteForecastDialog } from '../../components/forecasts/DeleteForecastDialog';
+import { ForecastGroupDialog } from '../../components/forecasts/ForecastGroupDialog';
 import { ForecastDetail } from '../../components/forecasts/ForecastDetail';
 import { ForecastForm } from '../../components/forecasts/ForecastForm';
 import { ForecastTable } from '../../components/forecasts/ForecastTable';
@@ -12,6 +13,7 @@ import {
   type Forecast,
   type ForecastDetails,
   type ForecastInput,
+  type ForecastGroup,
   type ForecastSummary,
 } from '../../features/forecasts/forecastsApi';
 import type {
@@ -32,6 +34,9 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]),
     [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [distribution, setDistribution] = useState<Distribution[]>([]);
+  const [groups, setGroups] = useState<ForecastGroup[]>([]);
+  const [groupDialog, setGroupDialog] = useState<ForecastGroup | false>(false);
+  const [groupBusy, setGroupBusy] = useState(false);
   const [form, setForm] = useState<FormState>(null),
     [details, setDetails] = useState<ForecastDetails | null>(null),
     [matches, setMatches] = useState<
@@ -40,7 +45,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
   const [search, setSearch] = useState(''),
     [categoryId, setCategoryId] = useState(''),
     [status, setStatus] = useState(''),
-    [view, setView] = useState<'expense' | 'income' | 'all'>('expense');
+    [view, setView] = useState<'expense' | 'income' | 'all' | `group:${string}`>('expense');
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -59,6 +64,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         accountsData,
         categoriesData,
         distributionData,
+        groupsData,
       ] = await Promise.all([
         forecastsApi.getAll({
           period: month,
@@ -70,12 +76,14 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         forecastsApi.getAccounts(),
         forecastsApi.getCategories(),
         forecastsApi.distributions(month),
+        forecastsApi.groups(),
       ]);
       setItems(rows);
       setSummary(totals);
       setAccounts(accountsData);
       setCategories(categoriesData);
       setDistribution(distributionData);
+      setGroups(groupsData);
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -110,6 +118,39 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       );
     } finally {
       setBusy(false);
+    }
+  }
+  async function saveGroup(name: string) {
+    setGroupBusy(true);
+    try {
+      const saved = groupDialog
+        ? await forecastsApi.updateGroup(groupDialog.id, name)
+        : await forecastsApi.createGroup(name);
+      setGroups(await forecastsApi.groups());
+      if (!groupDialog) setView(`group:${saved.id}`);
+      setGroupDialog(false);
+      toast.success(groupDialog ? 'Aba atualizada.' : 'Aba criada.');
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível salvar a aba.');
+    } finally {
+      setGroupBusy(false);
+    }
+  }
+  async function deleteGroup() {
+    if (!groupDialog) return;
+    setGroupBusy(true);
+    try {
+      await forecastsApi.deleteGroup(groupDialog.id);
+      setGroups(await forecastsApi.groups());
+      if (view === `group:${groupDialog.id}`) setView('expense');
+      setGroupDialog(false);
+      toast.success('Aba excluída. As previsões foram mantidas em Contas a pagar.');
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível excluir a aba.');
+    } finally {
+      setGroupBusy(false);
     }
   }
   async function remove(item: Forecast, scope: 'occurrence' | 'future') {
@@ -293,7 +334,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           onClick={() => setView('expense')}
         >
           Contas a pagar{' '}
-          <span>{items.filter((item) => item.kind === 'expense').length}</span>
+          <span>{items.filter((item) => item.kind === 'expense' && !item.groupId).length}</span>
         </button>
         <button
           className={view === 'income' ? 'active' : ''}
@@ -308,6 +349,26 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         >
           Todas
         </button>
+        {groups.map((group) => {
+          const groupView = `group:${group.id}` as const;
+          return (
+            <div className={`forecast-view-tab-item ${view === groupView ? 'active' : ''}`} key={group.id}>
+              <button
+                className={view === groupView ? 'active' : ''}
+                onClick={() => setView(groupView)}
+              >
+                {group.name}{' '}
+                <span>{items.filter((item) => item.kind === 'expense' && item.groupId === group.id).length}</span>
+              </button>
+              <button className="forecast-tab-action" type="button" aria-label={`Editar aba ${group.name}`} title={`Editar ${group.name}`} onClick={() => setGroupDialog(group)}>
+                <Icon name="edit" size={13} />
+              </button>
+            </div>
+          );
+        })}
+        <button className="forecast-add-tab" onClick={() => setGroupDialog(null)}>
+          <Icon name="plus" size={14} /> Nova aba
+        </button>
       </nav>
       {loading ? (
         <section className="panel">
@@ -318,11 +379,11 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         </section>
       ) : (
         <>
-          {(view === 'expense' || view === 'all') && (
+          {(view === 'expense' || view === 'all' || view.startsWith('group:')) && (
             <ForecastTable
-              title="Contas a pagar"
-              description="Compromissos previstos e pagamentos já conciliados."
-              items={items.filter((item) => item.kind === 'expense')}
+              title={view.startsWith('group:') ? groups.find((group) => `group:${group.id}` === view)?.name ?? 'Contas a pagar' : 'Contas a pagar'}
+              description={view.startsWith('group:') ? 'Despesas organizadas nesta aba.' : 'Compromissos previstos e pagamentos já conciliados.'}
+              items={items.filter((item) => item.kind === 'expense' && (view === 'all' || (view.startsWith('group:') ? item.groupId === view.slice(6) : !item.groupId)))}
               distribution={distribution}
               mode="expense"
               onView={openDetails}
@@ -365,12 +426,14 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           )}
         </>
       )}
-      {form && (
+          {form && (
         <ForecastForm
           item={form.item}
           scope={form.scope}
           accounts={accounts}
           categories={categories}
+          groups={groups}
+          defaultGroupId={view.startsWith('group:') ? view.slice(6) : undefined}
           busy={busy}
           onClose={() => setForm(null)}
           onSave={save}
@@ -396,6 +459,15 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           item={pendingCancel}
           onCancel={() => setPendingCancel(null)}
           onConfirm={(scope) => void remove(pendingCancel, scope)}
+        />
+      )}
+      {groupDialog !== false && (
+        <ForecastGroupDialog
+          group={groupDialog}
+          busy={groupBusy}
+          onClose={() => setGroupDialog(false)}
+          onSave={saveGroup}
+          onDelete={groupDialog ? deleteGroup : undefined}
         />
       )}
     </main>
