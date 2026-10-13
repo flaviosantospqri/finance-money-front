@@ -28,6 +28,18 @@ type FormState = {
   scope: 'occurrence' | 'future';
 } | null;
 
+function sumForecastField(rows: Forecast[], field: 'amount' | 'realized' | 'pending') {
+  const cents = rows.reduce((total, row) => {
+    const raw = row[field] ?? '0';
+    const negative = raw.startsWith('-');
+    const [whole = '0', fraction = ''] = raw.replace('-', '').split('.');
+    const value = BigInt(whole || '0') * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2));
+    return total + (negative ? -value : value);
+  }, 0n);
+  const absolute = cents < 0n ? -cents : cents;
+  return `${cents < 0n ? '-' : ''}${absolute / 100n}.${(absolute % 100n).toString().padStart(2, '0')}`;
+}
+
 export function ForecastsPage({ month, onManageRepasses }: Props) {
   const [items, setItems] = useState<Forecast[]>([]),
     [summary, setSummary] = useState<ForecastSummary | null>(null);
@@ -246,6 +258,21 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       );
     }
   }
+  const activeRows = items.filter((item) => item.status !== 'cancelled');
+  const currentTabRows = activeRows.filter((item) => {
+    if (view === 'income') return item.kind === 'income';
+    if (view === 'all') return true;
+    if (view.startsWith('group:')) return item.kind === 'expense' && item.groupId === view.slice(6);
+    return item.kind === 'expense' && !item.groupId;
+  });
+  const currentTabName = view.startsWith('group:')
+    ? groups.find((group) => group.id === view.slice(6))?.name ?? 'Contas a pagar'
+    : view === 'income' ? 'Recebimentos' : view === 'all' ? 'Todas' : 'Contas a pagar';
+  const totalFields = [
+    { key: 'amount' as const, label: 'Previsto' },
+    { key: 'realized' as const, label: 'Realizado' },
+    { key: 'pending' as const, label: 'Pendente' },
+  ];
   return (
     <main className="page-content forecasts-page">
       <section className="cash-book-toolbar forecasts-toolbar">
@@ -334,23 +361,27 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           onClick={() => setView('expense')}
         >
           Contas a pagar{' '}
-          <span>{items.filter((item) => item.kind === 'expense' && !item.groupId).length}</span>
+          <span>{items.filter((item) => item.kind === 'expense' && item.status !== 'cancelled' && !item.groupId).length}</span>
+          <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'expense' && !item.groupId), 'amount'))}</span>
         </button>
         <button
           className={view === 'income' ? 'active' : ''}
           onClick={() => setView('income')}
         >
           Recebimentos{' '}
-          <span>{items.filter((item) => item.kind === 'income').length}</span>
+          <span>{items.filter((item) => item.kind === 'income' && item.status !== 'cancelled').length}</span>
+          <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'income'), 'amount'))}</span>
         </button>
         <button
           className={view === 'all' ? 'active' : ''}
           onClick={() => setView('all')}
         >
           Todas
+          <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows, 'amount'))}</span>
         </button>
         {groups.map((group) => {
           const groupView = `group:${group.id}` as const;
+          const groupRows = activeRows.filter((item) => item.kind === 'expense' && item.groupId === group.id);
           return (
             <div className={`forecast-view-tab-item ${view === groupView ? 'active' : ''}`} key={group.id}>
               <button
@@ -358,7 +389,8 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
                 onClick={() => setView(groupView)}
               >
                 {group.name}{' '}
-                <span>{items.filter((item) => item.kind === 'expense' && item.groupId === group.id).length}</span>
+                <span>{groupRows.length}</span>
+                <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(groupRows, 'amount'))}</span>
               </button>
               <button className="forecast-tab-action" type="button" aria-label={`Editar aba ${group.name}`} title={`Editar ${group.name}`} onClick={() => setGroupDialog(group)}>
                 <Icon name="edit" size={13} />
@@ -370,6 +402,19 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           <Icon name="plus" size={14} /> Nova aba
         </button>
       </nav>
+      <section className="forecast-tab-totals" aria-label="Totais das previsões">
+        {[
+          { title: `Total da aba · ${currentTabName}`, rows: currentTabRows, description: 'Mês selecionado e filtros ativos' },
+          { title: 'Total geral · Todas as abas', rows: activeRows, description: 'Soma de contas a pagar e recebimentos' },
+        ].map(({ title, rows, description }) => (
+          <article key={title}>
+            <div className="forecast-tab-total-heading"><strong>{title}</strong><small>{description}</small></div>
+            <dl>{totalFields.map(({ key, label }) => (
+              <div key={key}><dt>{label}</dt><dd>{formatCurrencyDecimal(sumForecastField(rows, key))}</dd></div>
+            ))}</dl>
+          </article>
+        ))}
+      </section>
       {loading ? (
         <section className="panel">
           <div className="cash-book-state">
