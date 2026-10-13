@@ -63,12 +63,20 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [editingMovement, setEditingMovement] =
     useState<InvestmentMovement | null>(null);
   const [saving, setSaving] = useState(false);
+  const [movementPage, setMovementPage] = useState(1);
+  const [movementPageSize, setMovementPageSize] = useState(10);
   const investmentAccounts = useMemo(
     () => accounts.filter((account) => account.type === "investment"),
     [accounts],
   );
   const selectedApplication = applications.find(
     (app) => app.id === applicationId,
+  );
+  const movementPageCount = Math.max(1, Math.ceil(movements.length / movementPageSize));
+  const currentMovementPage = Math.min(movementPage, movementPageCount);
+  const visibleMovements = movements.slice(
+    (currentMovementPage - 1) * movementPageSize,
+    currentMovementPage * movementPageSize,
   );
   const accountApplications = applications.filter(
     (app) => !accountId || app.accountId === accountId,
@@ -139,6 +147,10 @@ export function InvestmentsPage({ month }: { month: string }) {
       active = false;
     };
   }, [month, accountId, applicationId, refresh]);
+
+  useEffect(() => {
+    setMovementPage(1);
+  }, [applicationId]);
 
   async function saveApplication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -322,6 +334,11 @@ export function InvestmentsPage({ month }: { month: string }) {
           <section className="panel cash-book-table-panel investments-ledger">
             <header className="cash-book-table-heading">
               <div><h2>Histórico da aplicação</h2><p>Movimentações em ordem cronológica; o saldo começa em zero e é atualizado a cada lançamento.</p></div>
+              <label className="cash-book-page-size investment-history-page-size">
+                <span>Exibir</span>
+                <SelectField ariaLabel="Movimentações do investimento por página" value={String(movementPageSize)} onValueChange={(value) => { setMovementPageSize(Number(value)); setMovementPage(1); }} options={[10, 50, 100].map((size) => ({ value: String(size), label: String(size) }))} />
+                <span>por página</span>
+              </label>
             </header>
             {loading ? (
               <div className="cash-book-state">Carregando histórico…</div>
@@ -339,7 +356,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                 <table className="transactions-table cash-book-table investments-table investment-detail-table">
                   <thead><tr><th>Data</th><th>Origem / descrição</th><th>Tipo</th><th className="cash-book-balance-heading">Valor</th><th className="cash-book-balance-heading">Rendimento</th><th className="cash-book-balance-heading">Saldo acumulado</th><th>Ações</th></tr></thead>
                   <tbody>
-                    {movements.map((movement) => (
+                    {visibleMovements.map((movement) => (
                       <tr key={movement.id}>
                         <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(`${movement.occurredAt}T12:00:00`))}</td>
                         <td>{movement.origin || movement.notes || "—"}</td>
@@ -358,6 +375,16 @@ export function InvestmentsPage({ month }: { month: string }) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {!loading && movements.length > 0 && (
+              <div className="table-footer">
+                <span>Exibindo {(currentMovementPage - 1) * movementPageSize + 1}–{Math.min(currentMovementPage * movementPageSize, movements.length)} de {movements.length} movimentações</span>
+                <div className="pagination">
+                  <button disabled={currentMovementPage <= 1} onClick={() => setMovementPage((page) => Math.max(1, page - 1))}>Anterior</button>
+                  <span>{currentMovementPage} / {movementPageCount}</span>
+                  <button disabled={currentMovementPage >= movementPageCount} onClick={() => setMovementPage((page) => Math.min(movementPageCount, page + 1))}>Próxima</button>
+                </div>
               </div>
             )}
           </section>
