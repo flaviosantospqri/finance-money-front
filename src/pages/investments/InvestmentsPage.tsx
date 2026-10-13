@@ -5,6 +5,7 @@ import { Icon } from "../../components/ui/Icon";
 import { SelectField } from "../../components/ui/SelectField";
 import { FinancialAccountDialog } from "../../components/cash-book/FinancialAccountDialog";
 import { InvestmentApplicationDialog } from "../../components/investments/InvestmentApplicationDialog";
+import { DeleteInvestmentApplicationDialog } from "../../components/investments/DeleteInvestmentApplicationDialog";
 import {
   InvestmentMovementDialog,
   type InvestmentMovementDraft,
@@ -54,6 +55,8 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [showApplication, setShowApplication] = useState(false);
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [editingApplication, setEditingApplication] =
+    useState<InvestmentApplication | null>(null);
+  const [deleteApplicationTarget, setDeleteApplicationTarget] =
     useState<InvestmentApplication | null>(null);
   const [movementDraft, setMovementDraft] =
     useState<InvestmentMovementDraft | null>(null);
@@ -258,6 +261,26 @@ export function InvestmentsPage({ month }: { month: string }) {
     }
   }
 
+  async function deleteApplication() {
+    if (!deleteApplicationTarget) return;
+    setSaving(true);
+    try {
+      await investmentsApi.deleteApplication(deleteApplicationTarget.id);
+      toast.success("Aplicação excluída e removida das listas.");
+      if (applicationId === deleteApplicationTarget.id) setApplicationId("");
+      setDeleteApplicationTarget(null);
+      setRefresh((value) => value + 1);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Não foi possível excluir a aplicação.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const cards = [
     {
       label: "Patrimônio investido",
@@ -444,6 +467,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                               setError(reason instanceof Error ? reason.message : "Não foi possível atualizar a aplicação.");
                             }
                           }}><Icon name={app.active ? "close" : "check"} size={15} /></button>
+                          <button className="icon-button danger" title="Excluir aplicação" aria-label={`Excluir ${app.name}`} onClick={() => setDeleteApplicationTarget(app)}><Icon name="trash" size={15} /></button>
                         </div></td>
                       </tr>
                     ))}
@@ -467,6 +491,14 @@ export function InvestmentsPage({ month }: { month: string }) {
             setEditingApplication(null);
           }}
           onSubmit={saveApplication}
+        />
+      )}
+      {deleteApplicationTarget && (
+        <DeleteInvestmentApplicationDialog
+          application={deleteApplicationTarget}
+          busy={saving}
+          onClose={() => setDeleteApplicationTarget(null)}
+          onConfirm={() => void deleteApplication()}
         />
       )}
       {showAccountDialog && (

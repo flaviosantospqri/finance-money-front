@@ -95,6 +95,10 @@ export const investmentsApi = {
       method: "PATCH",
       body: JSON.stringify(input),
     }),
+  deleteApplication: (id: string) =>
+    request<{ deleted: boolean; id: string }>(`/investments/${id}`, {
+      method: 'DELETE',
+    }),
   createMovement: (
     id: string,
     input: {
