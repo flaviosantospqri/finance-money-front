@@ -359,7 +359,7 @@ export function InvestmentsPage({ month }: { month: string }) {
           </section>
           <section className="panel cash-book-table-panel investments-ledger">
             <header className="cash-book-table-heading">
-              <div><h2>Histórico da aplicação</h2><p>Movimentações desde {new Intl.DateTimeFormat("pt-BR").format(new Date(`${selectedApplication.referenceDate}T12:00:00`))}; o saldo acumulado inclui o saldo inicial.</p></div>
+              <div><h2>Histórico da aplicação</h2><p>Histórico completo; o saldo acumulado considera o saldo inicial e todas as movimentações, inclusive as retroativas.</p></div>
               <span className="investment-opening-balance">Saldo inicial: <strong>{formatCurrencyDecimal(selectedApplication.openingBalance)}</strong></span>
             </header>
             {loading ? (
