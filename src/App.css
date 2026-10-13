@@ -627,6 +627,7 @@ button { color: inherit; }
 .forecast-add-tab { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .forecast-tab-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .forecast-tab-totals article { display: grid; gap: 12px; padding: 13px 16px; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); }
+.forecast-tab-totals.is-single > article { grid-column: 1 / -1; }
 .forecast-tab-total-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .forecast-tab-total-heading strong { font-size: 13px; }
 .forecast-tab-total-heading small { color: var(--text-soft); font-size: 11px; }
@@ -634,6 +635,12 @@ button { color: inherit; }
 .forecast-tab-totals dl div { display: grid; gap: 4px; }
 .forecast-tab-totals dt { color: var(--text-soft); font-size: 11px; }
 .forecast-tab-totals dd { margin: 0; font-size: 14px; font-weight: 700; }
+.forecast-overall-table-scroll { width: 100%; overflow-x: auto; }
+.forecast-overall-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.forecast-overall-table th, .forecast-overall-table td { padding: 7px 9px; border-top: 1px solid var(--row-border); text-align: right; white-space: nowrap; }
+.forecast-overall-table thead th { color: var(--text-soft); font-size: 11px; font-weight: 600; }
+.forecast-overall-table th:first-child { text-align: left; }
+.forecast-overall-table tbody th { color: var(--text-soft); font-weight: 500; }
 .forecast-group-dialog .form-field { margin-top: 18px; }
 .forecast-group-dialog .form-field input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); font: inherit; }
 .forecast-group-warning { margin-top: 14px !important; padding: 10px; border: 1px solid var(--red-soft); border-radius: 8px; color: var(--red) !important; background: var(--surface-muted); font-size: 12px !important; }
