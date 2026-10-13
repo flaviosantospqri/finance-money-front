@@ -457,6 +457,7 @@ button { color: inherit; }
 .investment-evolution-chart header p { margin: 4px 0 0; color: var(--text-soft); font-size: 12px; }
 .investment-evolution-chart-area { width: 100%; height: 260px; margin-top: 12px; }
 .investment-evolution-history .cash-book-table-heading { display: flex; align-items: center; justify-content: space-between; }
+.investment-evolution-history-actions { display: flex; align-items: center; gap: 12px; }
 .investment-evolution-history .transactions-table { min-width: 680px; }
 .investment-evolution-history tfoot td { padding: 12px 14px; border-top: 2px solid var(--row-border); color: var(--text); background: var(--surface-muted); font-weight: 700; }
 .investment-evolution-positive { color: var(--green) !important; }
@@ -748,6 +749,7 @@ button { color: inherit; }
   .investment-evolution-toolbar .secondary-button { flex: 1 1 100%; margin-left: 0; }
   .investment-evolution-chart-area { height: 230px; }
   .investment-evolution-history .cash-book-table-heading { align-items: flex-start; gap: 8px; }
+  .investment-evolution-history-actions { width: 100%; flex-wrap: wrap; justify-content: space-between; }
   .forecast-view-tabs { overflow-x: auto; }
   .forecast-view-tabs button { white-space: nowrap; }
   .forecast-tab-totals { grid-template-columns: 1fr; }
