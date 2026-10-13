@@ -47,6 +47,7 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [movements, setMovements] = useState<InvestmentMovement[]>([]);
   const [applicationId, setApplicationId] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -71,6 +72,15 @@ export function InvestmentsPage({ month }: { month: string }) {
   const selectedApplication = applications.find(
     (app) => app.id === applicationId,
   );
+  const accountApplications = applications.filter(
+    (app) => !accountId || app.accountId === accountId,
+  );
+  const listedApplications = accountApplications.filter(
+    (app) => showInactive || app.active,
+  );
+  const inactiveApplicationCount = accountApplications.filter(
+    (app) => !app.active,
+  ).length;
 
   useEffect(() => {
     let active = true;
@@ -394,15 +404,18 @@ export function InvestmentsPage({ month }: { month: string }) {
           <section className="panel investments-applications">
             <header className="cash-book-table-heading">
               <div><h2>Aplicações</h2><p>Selecione uma aplicação para abrir seu saldo e histórico de movimentações.</p></div>
-              <span className="investment-count">{applications.filter((app) => !accountId || app.accountId === accountId).length} aplicações</span>
+              <div className="investment-list-controls">
+                <span className="investment-count">{listedApplications.length} {listedApplications.length === 1 ? "aplicação" : "aplicações"}</span>
+                {inactiveApplicationCount > 0 && <button className="text-link" onClick={() => setShowInactive((value) => !value)}>{showInactive ? "Ocultar inativas" : `Mostrar inativas (${inactiveApplicationCount})`}</button>}
+              </div>
             </header>
             {loading && !applications.length ? (
               <div className="cash-book-state">Carregando aplicações…</div>
-            ) : !applications.filter((app) => !accountId || app.accountId === accountId).length ? (
+            ) : !listedApplications.length ? (
               <div className="investments-empty">
                 <span className="placeholder-icon"><Icon name="investments" size={22} /></span>
-                <h3>{applications.length ? "Nenhuma aplicação nesta conta" : "Nenhuma aplicação cadastrada"}</h3>
-                <p>{investmentAccounts.length ? "Cadastre uma aplicação vinculada a uma conta de investimento para acompanhar aportes, resgates e rendimentos em um único histórico." : "Cadastre uma conta de investimento e depois crie a primeira aplicação."}</p>
+                <h3>{applications.length ? "Nenhuma aplicação ativa nesta conta" : "Nenhuma aplicação cadastrada"}</h3>
+                <p>{inactiveApplicationCount ? "Existem aplicações inativas ocultas. Use “Mostrar inativas” para visualizá-las ou reativá-las." : investmentAccounts.length ? "Cadastre uma aplicação vinculada a uma conta de investimento para acompanhar aportes, resgates e rendimentos em um único histórico." : "Cadastre uma conta de investimento e depois crie a primeira aplicação."}</p>
                 <button className="primary-button" onClick={() => {
                   if (!investmentAccounts.length) setShowAccountDialog(true);
                   else { setEditingApplication(null); setApplicationDate(today()); setShowApplication(true); }
@@ -413,7 +426,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                 <table className="transactions-table cash-book-table investment-applications-table">
                   <thead><tr><th>Aplicação</th><th>Conta / instituição</th><th>Tipo</th><th className="cash-book-balance-heading">Saldo atual</th><th>Situação</th><th>Ações</th></tr></thead>
                   <tbody>
-                    {applications.filter((app) => !accountId || app.accountId === accountId).map((app) => (
+                    {listedApplications.map((app) => (
                       <tr key={app.id}>
                         <td><button className="investment-open-link" onClick={() => setApplicationId(app.id)}><span className="investment-app-icon"><Icon name="investments" size={16} /></span><strong>{app.name}</strong><Icon name="chevron" size={14} /></button></td>
                         <td>{app.accountName}{app.institution ? ` · ${app.institution}` : ""}</td>
@@ -422,7 +435,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                         <td><span className={`investment-status${app.active ? " is-active" : ""}`}>{app.active ? "Ativa" : "Inativa"}</span></td>
                         <td><div className="investment-row-actions">
                           <button className="icon-button" aria-label={`Editar ${app.name}`} onClick={() => { setEditingApplication(app); setApplicationDate(app.referenceDate); setShowApplication(true); }}><Icon name="edit" size={15} /></button>
-                          <button className="icon-button" aria-label={`${app.active ? "Desativar" : "Ativar"} ${app.name}`} onClick={async () => {
+                          <button className="icon-button" title={app.active ? "Desativar aplicação (mantém o histórico)" : "Reativar aplicação"} aria-label={`${app.active ? "Desativar" : "Ativar"} ${app.name}`} onClick={async () => {
                             try {
                               await investmentsApi.updateApplication(app.id, { active: !app.active });
                               toast.success(app.active ? "Aplicação desativada." : "Aplicação ativada.");

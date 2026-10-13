@@ -477,6 +477,7 @@ button { color: inherit; }
 .investments-applications .cash-book-table-heading h2, .investments-ledger .cash-book-table-heading h2 { margin: 0; color: var(--text); font-size: 16px; }
 .investments-applications .cash-book-table-heading p, .investments-ledger .cash-book-table-heading p { margin: 4px 0 0; color: var(--text-soft); font-size: 12px; }
 .investment-count, .investment-opening-balance { color: var(--text-soft); font-size: 12px; white-space: nowrap; }
+.investment-list-controls { display: flex; align-items: center; gap: 12px; }
 .investment-opening-balance strong { color: var(--text); font-variant-numeric: tabular-nums; }
 .investment-applications-table { min-width: 860px; }
 .investment-applications-table th:nth-child(1) { width: 24%; }
