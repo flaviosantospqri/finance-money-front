@@ -68,13 +68,6 @@ export function InvestmentsPage({ month }: { month: string }) {
     () => accounts.filter((account) => account.type !== "investment"),
     [accounts],
   );
-  const visibleApplications = useMemo(
-    () =>
-      applications.filter(
-        (app) => app.active && (!accountId || app.accountId === accountId),
-      ),
-    [applications, accountId],
-  );
   const selectedApplication = applications.find(
     (app) => app.id === applicationId,
   );
@@ -86,7 +79,7 @@ export function InvestmentsPage({ month }: { month: string }) {
         if (!active) return;
         setApplications(apps);
         setAccounts(loadedAccounts);
-        setApplicationId((current) => current || apps[0]?.id || "");
+        setApplicationId((current) => apps.some((app) => app.id === current) ? current : "");
       })
       .catch((reason) => {
         if (active)
@@ -106,6 +99,7 @@ export function InvestmentsPage({ month }: { month: string }) {
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     Promise.all([
       investmentsApi.getSummary(
         month,
@@ -113,7 +107,7 @@ export function InvestmentsPage({ month }: { month: string }) {
         applicationId || undefined,
       ),
       applicationId
-        ? investmentsApi.getMovements(applicationId, month)
+        ? investmentsApi.getMovements(applicationId)
         : Promise.resolve([]),
     ])
       .then(([data, rows]) => {
@@ -283,299 +277,170 @@ export function InvestmentsPage({ month }: { month: string }) {
 
   return (
     <main className="page-content investments-page">
-      <div className="investments-toolbar">
-        <div className="cash-book-account-select">
-          <Icon name="bank" size={16} />
-          <span>Conta de investimento</span>
-          <SelectField
-            ariaLabel="Filtrar por conta"
-            value={accountId}
-            options={[{ value: '', label: investmentAccounts.length ? 'Todas as contas' : 'Nenhuma cadastrada' }, ...investmentAccounts.map((account) => ({ value: account.id, label: account.name }))]}
-            onValueChange={(value) => {
-              setAccountId(value);
-              setApplicationId("");
-            }}
-          />
-        </div>
-        <div className="cash-book-account-select">
-          <Icon name="wallet" size={16} />
-          <span>Aplicação</span>
-          <SelectField ariaLabel="Filtrar aplicação" value={applicationId} options={[{ value: '', label: 'Todas as aplicações' }, ...visibleApplications.map((app) => ({ value: app.id, label: app.name }))]} onValueChange={setApplicationId} />
-        </div>
-        <div className="investments-toolbar-actions">
-          <button className="secondary-button" onClick={() => setShowAccountDialog(true)}>
-            <Icon name="plus" size={15} />
-            Nova conta de investimento
-          </button>
-          <button
-            className="secondary-button"
-            disabled={!investmentAccounts.length}
-            onClick={() => {
-              setEditingApplication(null);
-              setApplicationDate(today());
-              setShowApplication(true);
-            }}
-          >
-            <Icon name="plus" size={15} />
-            Nova aplicação
-          </button>
-          <button
-            className="primary-button"
-            disabled={!selectedApplication || !selectedApplication.active}
-            onClick={() => {
-              setEditingMovement(null);
-              setMovementDraft({
-                type: "contribution",
-                amount: "",
-                occurredAt: today(),
-                origin: "",
-                notes: "",
-                sourceAccountId: cashAccounts[0]?.id ?? "",
-              });
-            }}
-          >
-            <Icon name="plus" size={16} />
-            Movimentação
-          </button>
-        </div>
-      </div>
       {error && (
         <div className="cash-book-feedback error" role="alert">
           {error}
-          <button onClick={() => setError("")} aria-label="Fechar">
-            ×
-          </button>
+          <button onClick={() => setError("")} aria-label="Fechar">×</button>
         </div>
       )}
-      <section className="cash-book-summary investments-summary">
-        {cards.map((card) => (
-          <article
-            className={`cash-book-summary-card ${card.tone}`}
-            key={card.label}
-          >
-            <div>
-              <span>{card.label}</span>
-              <i>
-                <Icon name={card.icon} size={15} />
-              </i>
+
+      {selectedApplication ? (
+        <>
+          <section className="panel investment-detail-heading">
+            <div className="investment-detail-topline">
+              <button className="text-link investment-back-button" onClick={() => setApplicationId("")}>
+                <Icon name="chevron" size={14} /> Todas as aplicações
+              </button>
+              <span className={`investment-status${selectedApplication.active ? " is-active" : ""}`}>
+                {selectedApplication.active ? "Ativa" : "Inativa"}
+              </span>
             </div>
-            <strong>{formatCurrencyDecimal(card.value)}</strong>
-            <small>
-              {card.label === "Patrimônio investido"
-                ? `Posição em ${summary?.asOf ?? month}`
-                : `Competência ${month}`}
-            </small>
-          </article>
-        ))}
-      </section>
-      <section className="panel investments-applications">
-        <header className="cash-book-table-heading">
-          <div>
-            <h2>Aplicações</h2>
-            <p>Contas de investimento e posição atual de cada aplicação</p>
+            <div className="investment-detail-main">
+              <span className="investment-app-icon"><Icon name="investments" size={20} /></span>
+              <div className="investment-detail-copy">
+                <h2>{selectedApplication.name}</h2>
+                <p>{selectedApplication.investmentType} · {selectedApplication.accountName}{selectedApplication.institution ? ` · ${selectedApplication.institution}` : ""}</p>
+              </div>
+              <div className="investment-detail-actions">
+                <button className="secondary-button" onClick={() => { setEditingApplication(selectedApplication); setApplicationDate(selectedApplication.referenceDate); setShowApplication(true); }}>
+                  <Icon name="edit" size={15} /> Editar aplicação
+                </button>
+                <button className="primary-button" disabled={!selectedApplication.active} onClick={() => {
+                  setEditingMovement(null);
+                  setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "", sourceAccountId: cashAccounts[0]?.id ?? "" });
+                }}>
+                  <Icon name="plus" size={16} /> Nova movimentação
+                </button>
+              </div>
+            </div>
+            {selectedApplication.notes && <p className="investment-detail-notes">{selectedApplication.notes}</p>}
+          </section>
+          <section className="cash-book-summary investments-summary">
+            {cards.map((card) => (
+              <article className={`cash-book-summary-card ${card.tone}`} key={card.label}>
+                <div><span>{card.label}</span><i><Icon name={card.icon} size={15} /></i></div>
+                <strong>{formatCurrencyDecimal(card.value)}</strong>
+                <small>{card.label === "Patrimônio investido" ? `Posição em ${summary?.asOf ?? month}` : `Competência ${month}`}</small>
+              </article>
+            ))}
+          </section>
+          <section className="panel cash-book-table-panel investments-ledger">
+            <header className="cash-book-table-heading">
+              <div><h2>Histórico da aplicação</h2><p>Movimentações desde {new Intl.DateTimeFormat("pt-BR").format(new Date(`${selectedApplication.referenceDate}T12:00:00`))}; o saldo acumulado inclui o saldo inicial.</p></div>
+              <span className="investment-opening-balance">Saldo inicial: <strong>{formatCurrencyDecimal(selectedApplication.openingBalance)}</strong></span>
+            </header>
+            {loading ? (
+              <div className="cash-book-state">Carregando histórico…</div>
+            ) : !movements.length ? (
+              <div className="investments-empty compact">
+                <h3>Esta aplicação ainda não tem movimentações</h3>
+                <p>Registre aportes, resgates e rendimentos. Cada lançamento ficará no histórico desta aplicação.</p>
+                <button className="primary-button" disabled={!selectedApplication.active} onClick={() => {
+                  setEditingMovement(null);
+                  setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "", sourceAccountId: cashAccounts[0]?.id ?? "" });
+                }}><Icon name="plus" size={15} /> Adicionar movimentação</button>
+              </div>
+            ) : (
+              <div className="table-scroll">
+                <table className="transactions-table cash-book-table investments-table investment-detail-table">
+                  <thead><tr><th>Data</th><th>Origem / descrição</th><th>Tipo</th><th className="cash-book-balance-heading">Valor</th><th className="cash-book-balance-heading">Rendimento</th><th className="cash-book-balance-heading">Saldo acumulado</th><th>Ações</th></tr></thead>
+                  <tbody>
+                    {movements.map((movement) => (
+                      <tr key={movement.id}>
+                        <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(`${movement.occurredAt}T12:00:00`))}</td>
+                        <td>{movement.origin || movement.notes || "—"}</td>
+                        <td><span className={`investment-type-chip ${movement.type}`}>{typeLabels[movement.type]}</span></td>
+                        <td className={`cash-book-money ${movement.type === "income" || movement.type === "contribution" ? "income" : ""}`}>{signedValue(movement)}</td>
+                        <td className="cash-book-money income">{movement.type === "income" ? formatCurrencyDecimal(movement.amount) : "—"}</td>
+                        <td className="cash-book-money balance">{formatCurrencyDecimal(movement.balance)}</td>
+                        <td><div className="investment-row-actions">
+                          {!movement.transferId ? <>
+                            <button className="icon-button" aria-label="Editar movimentação" onClick={() => {
+                              setEditingMovement(movement);
+                              setMovementDraft({ type: movement.type as "income" | "adjustment", amount: moneyInput(movement.amount), occurredAt: movement.occurredAt, origin: movement.origin ?? "", notes: movement.notes ?? "", sourceAccountId: "" });
+                            }}><Icon name="edit" size={15} /></button>
+                            <button className="icon-button danger" aria-label="Excluir movimentação" onClick={() => void deleteMovement(movement)}><Icon name="trash" size={15} /></button>
+                          </> : <small className="investment-source-note">Livro Caixa</small>}
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        <>
+          <div className="investments-toolbar">
+            <div className="cash-book-account-select">
+              <Icon name="bank" size={16} /><span>Conta de investimento</span>
+              <SelectField ariaLabel="Filtrar por conta" value={accountId} options={[{ value: "", label: investmentAccounts.length ? "Todas as contas" : "Nenhuma cadastrada" }, ...investmentAccounts.map((account) => ({ value: account.id, label: account.name }))]} onValueChange={setAccountId} />
+            </div>
+            <div className="investments-toolbar-actions">
+              <button className="secondary-button" onClick={() => setShowAccountDialog(true)}><Icon name="plus" size={15} /> Nova conta de investimento</button>
+              <button className="primary-button" disabled={!investmentAccounts.length} onClick={() => { setEditingApplication(null); setApplicationDate(today()); setShowApplication(true); }}><Icon name="plus" size={15} /> Nova aplicação</button>
+            </div>
           </div>
-        </header>
-        {loading && !applications.length ? (
-          <div className="cash-book-state">Carregando aplicações…</div>
-        ) : !applications.length ? (
-          <div className="investments-empty">
-            <span className="placeholder-icon">
-              <Icon name="investments" size={22} />
-            </span>
-            <h3>Nenhuma aplicação cadastrada</h3>
-            <p>
-              {investmentAccounts.length
-                ? "Cadastre uma aplicação vinculada a uma conta do tipo investimento para começar."
-                : "O Livro Caixa mostra todas as contas ativas. Aqui aparecem somente contas do tipo investimento, e ainda não há nenhuma cadastrada."}
-            </p>
-            <button
-              className="primary-button"
-              onClick={() => {
-                if (!investmentAccounts.length) setShowAccountDialog(true);
-                else {
-                  setApplicationDate(today());
-                  setShowApplication(true);
-                }
-              }}
-            >
-              <Icon name="plus" size={15} />
-              {investmentAccounts.length ? "Cadastrar aplicação" : "Cadastrar conta de investimento"}
-            </button>
-          </div>
-        ) : (
-          <div className="investments-app-list">
-            {applications
-              .filter((app) => !accountId || app.accountId === accountId)
-              .map((app) => (
-                <article
-                  key={app.id}
-                  className={`investment-app-card ${app.id === applicationId ? "selected" : ""}`}
-                >
-                  <button className="investment-app-select" onClick={() => setApplicationId(app.id)}>
-                    <span className="investment-app-icon"><Icon name="investments" size={18} /></span>
-                    <span className="investment-app-copy">
-                      <strong>{app.name}</strong>
-                      <small>{app.accountName} · {app.investmentType}{app.institution ? ` · ${app.institution}` : ""}</small>
-                    </span>
-                    <strong className="investment-app-balance">{formatCurrencyDecimal(app.balance ?? app.openingBalance)}</strong>
-                  </button>
-                  <span className="investment-app-actions">
-                    <button
-                      className="icon-button"
-                      aria-label={`Editar ${app.name}`}
-                      onClick={() => {
-                        setEditingApplication(app);
-                        setApplicationDate(app.referenceDate);
-                        setShowApplication(true);
-                      }}
-                    >
-                      <Icon name="edit" size={15} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label={`${app.active ? "Desativar" : "Ativar"} ${app.name}`}
-                      onClick={async () => {
-                        try {
-                          await investmentsApi.updateApplication(app.id, {
-                            active: !app.active,
-                          });
-                          toast.success(
-                            app.active
-                              ? "Aplicação desativada."
-                              : "Aplicação ativada.",
-                          );
-                          setRefresh((value) => value + 1);
-                        } catch (reason) {
-                          setError(
-                            reason instanceof Error
-                              ? reason.message
-                              : "Não foi possível atualizar a aplicação.",
-                          );
-                        }
-                      }}
-                    >
-                      <Icon name={app.active ? "close" : "check"} size={15} />
-                    </button>
-                  </span>
-                </article>
-              ))}
-          </div>
-        )}
-      </section>
-      <section className="panel cash-book-table-panel investments-ledger">
-        <header className="cash-book-table-heading">
-          <div>
-            <h2>
-              {selectedApplication
-                ? `Histórico — ${selectedApplication.name}`
-                : "Movimentações"}
-            </h2>
-            <p>Aportes, resgates e rendimentos em ordem cronológica</p>
-          </div>
-        </header>
-        {!applicationId ? (
-          <div className="cash-book-state">
-            Selecione uma aplicação para consultar o histórico.
-          </div>
-        ) : loading ? (
-          <div className="cash-book-state">Carregando movimentações…</div>
-        ) : !movements.length ? (
-          <div className="investments-empty compact">
-            <h3>Nenhuma movimentação nesta competência</h3>
-            <p>
-              Registre um aporte, resgate ou rendimento para esta aplicação.
-            </p>
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="transactions-table cash-book-table investments-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Conta / aplicação</th>
-                  <th>Investidor / origem</th>
-                  <th>Tipo</th>
-                  <th className="cash-book-balance-heading">Valor</th>
-                  <th className="cash-book-balance-heading">Rendimento</th>
-                  <th className="cash-book-balance-heading">Saldo acumulado</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movements.map((movement) => (
-                  <tr key={movement.id}>
-                    <td>
-                      {new Intl.DateTimeFormat("pt-BR").format(
-                        new Date(`${movement.occurredAt}T12:00:00`),
-                      )}
-                    </td>
-                    <td>
-                      <strong>{selectedApplication?.name}</strong>
-                      <small>{selectedApplication?.accountName}</small>
-                    </td>
-                    <td>{movement.origin || "—"}</td>
-                    <td>
-                      <span className={`investment-type-chip ${movement.type}`}>
-                        {typeLabels[movement.type]}
-                      </span>
-                    </td>
-                    <td
-                      className={`cash-book-money ${movement.type === "income" || movement.type === "contribution" ? "income" : ""}`}
-                    >
-                      {signedValue(movement)}
-                    </td>
-                    <td className="cash-book-money income">
-                      {movement.type === "income"
-                        ? formatCurrencyDecimal(movement.amount)
-                        : "—"}
-                    </td>
-                    <td className="cash-book-money balance">
-                      {formatCurrencyDecimal(movement.balance)}
-                    </td>
-                    <td>
-                      <div className="investment-row-actions">
-                        {!movement.transferId ? (
-                          <>
-                            <button
-                              className="icon-button"
-                              aria-label="Editar movimentação"
-                              onClick={() => {
-                                setEditingMovement(movement);
-                                setMovementDraft({
-                                  type: movement.type as
-                                    "income" | "adjustment",
-                                  amount: moneyInput(movement.amount),
-                                  occurredAt: movement.occurredAt,
-                                  origin: movement.origin ?? "",
-                                  notes: movement.notes ?? "",
-                                  sourceAccountId: "",
-                                });
-                              }}
-                            >
-                              <Icon name="edit" size={15} />
-                            </button>
-                            <button
-                              className="icon-button danger"
-                              aria-label="Excluir movimentação"
-                              onClick={() => void deleteMovement(movement)}
-                            >
-                              <Icon name="trash" size={15} />
-                            </button>
-                          </>
-                        ) : (
-                          <small className="investment-source-note">
-                            Livro Caixa
-                          </small>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+          <section className="cash-book-summary investments-summary">
+            {cards.map((card) => (
+              <article className={`cash-book-summary-card ${card.tone}`} key={card.label}>
+                <div><span>{card.label}</span><i><Icon name={card.icon} size={15} /></i></div>
+                <strong>{formatCurrencyDecimal(card.value)}</strong>
+                <small>{card.label === "Patrimônio investido" ? `Posição em ${summary?.asOf ?? month}` : `Competência ${month}`}</small>
+              </article>
+            ))}
+          </section>
+          <section className="panel investments-applications">
+            <header className="cash-book-table-heading">
+              <div><h2>Aplicações</h2><p>Selecione uma aplicação para abrir seu saldo e histórico de movimentações.</p></div>
+              <span className="investment-count">{applications.filter((app) => !accountId || app.accountId === accountId).length} aplicações</span>
+            </header>
+            {loading && !applications.length ? (
+              <div className="cash-book-state">Carregando aplicações…</div>
+            ) : !applications.filter((app) => !accountId || app.accountId === accountId).length ? (
+              <div className="investments-empty">
+                <span className="placeholder-icon"><Icon name="investments" size={22} /></span>
+                <h3>{applications.length ? "Nenhuma aplicação nesta conta" : "Nenhuma aplicação cadastrada"}</h3>
+                <p>{investmentAccounts.length ? "Cadastre uma aplicação vinculada a uma conta de investimento para acompanhar aportes, resgates e rendimentos em um único histórico." : "Cadastre uma conta de investimento e depois crie a primeira aplicação."}</p>
+                <button className="primary-button" onClick={() => {
+                  if (!investmentAccounts.length) setShowAccountDialog(true);
+                  else { setEditingApplication(null); setApplicationDate(today()); setShowApplication(true); }
+                }}><Icon name="plus" size={15} /> {investmentAccounts.length ? "Nova aplicação" : "Nova conta de investimento"}</button>
+              </div>
+            ) : (
+              <div className="table-scroll investment-applications-table-scroll">
+                <table className="transactions-table cash-book-table investment-applications-table">
+                  <thead><tr><th>Aplicação</th><th>Conta / instituição</th><th>Tipo</th><th className="cash-book-balance-heading">Saldo atual</th><th>Situação</th><th>Ações</th></tr></thead>
+                  <tbody>
+                    {applications.filter((app) => !accountId || app.accountId === accountId).map((app) => (
+                      <tr key={app.id}>
+                        <td><button className="investment-open-link" onClick={() => setApplicationId(app.id)}><span className="investment-app-icon"><Icon name="investments" size={16} /></span><strong>{app.name}</strong><Icon name="chevron" size={14} /></button></td>
+                        <td>{app.accountName}{app.institution ? ` · ${app.institution}` : ""}</td>
+                        <td>{app.investmentType}</td>
+                        <td className="cash-book-money balance">{formatCurrencyDecimal(app.balance ?? app.openingBalance)}</td>
+                        <td><span className={`investment-status${app.active ? " is-active" : ""}`}>{app.active ? "Ativa" : "Inativa"}</span></td>
+                        <td><div className="investment-row-actions">
+                          <button className="icon-button" aria-label={`Editar ${app.name}`} onClick={() => { setEditingApplication(app); setApplicationDate(app.referenceDate); setShowApplication(true); }}><Icon name="edit" size={15} /></button>
+                          <button className="icon-button" aria-label={`${app.active ? "Desativar" : "Ativar"} ${app.name}`} onClick={async () => {
+                            try {
+                              await investmentsApi.updateApplication(app.id, { active: !app.active });
+                              toast.success(app.active ? "Aplicação desativada." : "Aplicação ativada.");
+                              setRefresh((value) => value + 1);
+                            } catch (reason) {
+                              setError(reason instanceof Error ? reason.message : "Não foi possível atualizar a aplicação.");
+                            }
+                          }}><Icon name={app.active ? "close" : "check"} size={15} /></button>
+                        </div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
 
       {showApplication && (
         <InvestmentApplicationDialog

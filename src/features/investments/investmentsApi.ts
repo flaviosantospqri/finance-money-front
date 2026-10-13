@@ -78,9 +78,9 @@ export const investmentsApi = {
     request<InvestmentSummary>(
       `/investments/summary?${query({ month, accountId, applicationId })}`,
     ),
-  getMovements: (applicationId: string, month: string) =>
+  getMovements: (applicationId: string, month?: string) =>
     request<InvestmentMovement[]>(
-      `/investments/${applicationId}/transactions?month=${month}`,
+      `/investments/${applicationId}/transactions${month ? `?month=${month}` : ""}`,
     ),
   createApplication: (input: InvestmentApplicationInput) =>
     request<InvestmentApplication>("/investments", {

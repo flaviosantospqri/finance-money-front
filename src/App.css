@@ -476,6 +476,37 @@ button { color: inherit; }
 .investments-applications .cash-book-table-heading, .investments-ledger .cash-book-table-heading { display: flex; align-items: center; justify-content: space-between; min-height: 63px; padding: 14px 17px; border-bottom: 1px solid var(--row-border); }
 .investments-applications .cash-book-table-heading h2, .investments-ledger .cash-book-table-heading h2 { margin: 0; color: var(--text); font-size: 16px; }
 .investments-applications .cash-book-table-heading p, .investments-ledger .cash-book-table-heading p { margin: 4px 0 0; color: var(--text-soft); font-size: 12px; }
+.investment-count, .investment-opening-balance { color: var(--text-soft); font-size: 12px; white-space: nowrap; }
+.investment-opening-balance strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.investment-applications-table { min-width: 860px; }
+.investment-applications-table th:nth-child(1) { width: 24%; }
+.investment-applications-table th:nth-child(2) { width: 24%; }
+.investment-applications-table th:nth-child(3) { width: 15%; }
+.investment-applications-table th:nth-child(4) { width: 16%; }
+.investment-applications-table th:nth-child(5) { width: 11%; }
+.investment-open-link { display: inline-flex; align-items: center; gap: 9px; padding: 0; border: 0; color: var(--text); background: transparent; cursor: pointer; font: inherit; text-align: left; }
+.investment-open-link:hover strong { color: var(--green); }
+.investment-open-link .investment-app-icon { width: 30px; height: 30px; flex-basis: 30px; }
+.investment-open-link > svg { color: var(--text-faint); transform: rotate(-90deg); }
+.investment-status { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 99px; color: var(--text-soft); background: var(--surface-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.investment-status.is-active { color: var(--green); background: var(--green-soft); }
+.investment-detail-heading { padding: 14px 17px 16px; }
+.investment-detail-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.investment-back-button { display: inline-flex; align-items: center; gap: 5px; }
+.investment-back-button svg { transform: rotate(90deg); }
+.investment-detail-main { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.investment-detail-main > .investment-app-icon { width: 42px; height: 42px; flex-basis: 42px; }
+.investment-detail-copy { min-width: 0; }
+.investment-detail-copy h2 { margin: 0; color: var(--text); font-size: 20px; }
+.investment-detail-copy p { margin: 4px 0 0; color: var(--text-soft); font-size: 12px; }
+.investment-detail-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.investment-detail-notes { margin: 12px 0 0 54px; color: var(--text-soft); font-size: 12px; white-space: pre-wrap; }
+.investment-detail-table { min-width: 780px; }
+.investment-detail-table th:nth-child(1) { width: 13%; }
+.investment-detail-table th:nth-child(2) { width: 25%; }
+.investment-detail-table th:nth-child(3) { width: 13%; }
+.investment-detail-table th:nth-child(4), .investment-detail-table th:nth-child(5) { width: 13%; }
+.investment-detail-table th:nth-child(6) { width: 16%; }
 .investments-app-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,360px),1fr)); gap: 10px; padding: 14px; }
 .investment-app-card { min-width: 0; display: flex; align-items: center; gap: 11px; padding: 13px; border: 1px solid var(--row-border); border-radius: 10px; color: var(--text); background: var(--surface); text-align: left; cursor: pointer; }
 .investment-app-card:hover, .investment-app-card.selected { border-color: var(--accent-strong); background: color-mix(in srgb,var(--surface) 94%,var(--accent)); }
@@ -841,4 +872,11 @@ button { color: inherit; }
   .investment-app-copy { min-width: calc(100% - 55px); }
   .investment-app-balance { margin-left: 46px; }
   .investments-applications .cash-book-table-heading, .investments-ledger .cash-book-table-heading { padding-inline: 12px; }
+  .investment-detail-main { align-items: flex-start; flex-wrap: wrap; }
+  .investment-detail-actions { width: 100%; margin-left: 0; justify-content: flex-start; }
+  .investment-detail-actions > button { flex: 1 1 auto; }
+  .investment-detail-copy { flex: 1; }
+  .investment-detail-copy h2 { font-size: 17px; }
+  .investment-detail-notes { margin-left: 0; }
+  .investment-detail-heading .investment-opening-balance { white-space: normal; }
 }
