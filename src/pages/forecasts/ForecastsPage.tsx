@@ -35,7 +35,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [distribution, setDistribution] = useState<Distribution[]>([]);
   const [groups, setGroups] = useState<ForecastGroup[]>([]);
-  const [groupDialog, setGroupDialog] = useState<ForecastGroup | false>(false);
+  const [groupDialog, setGroupDialog] = useState<ForecastGroup | null | false>(false);
   const [groupBusy, setGroupBusy] = useState(false);
   const [form, setForm] = useState<FormState>(null),
     [details, setDetails] = useState<ForecastDetails | null>(null),
