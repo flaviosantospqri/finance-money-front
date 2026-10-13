@@ -36,6 +36,10 @@ export type ForecastSummary = {
   realBalance: string;
   projectedBalance: string;
   futureNet: string;
+  futureCashMovements: string;
+  pendingIncome: string;
+  pendingExpenses: string;
+  projectionOpen: boolean;
 };
 export type Destination = { id: string; name: string; active: boolean };
 export type Distribution = Destination & {

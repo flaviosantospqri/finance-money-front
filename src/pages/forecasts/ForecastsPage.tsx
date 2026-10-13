@@ -47,6 +47,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [reconcileTarget, setReconcileTarget] = useState(''),
     [closeReason, setCloseReason] = useState('');
   const [pendingCancel, setPendingCancel] = useState<Forecast | null>(null);
+  const [showProjectionBreakdown, setShowProjectionBreakdown] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -240,13 +241,28 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
               </div>
               <strong>{formatCurrencyDecimal(value)}</strong>
               {label === 'Saldo projetado' && (
-                <small>
-                  Saldo real {formatCurrencyDecimal(summary.realBalance)} ·
-                  futuro {formatCurrencyDecimal(summary.futureNet)}
-                </small>
+                <div className="forecast-projection-summary">
+                  <small>{summary.projectionOpen ? 'Saldo real + valores em aberto até esta competência' : 'Competência encerrada · exibindo saldo real atual'}</small>
+                  <small>Real {formatCurrencyDecimal(summary.realBalance)} · futuro {formatCurrencyDecimal(summary.futureNet)}</small>
+                  <button className="text-link" type="button" aria-expanded={showProjectionBreakdown} onClick={() => setShowProjectionBreakdown((visible) => !visible)}>
+                    {showProjectionBreakdown ? 'Ocultar composição' : 'Ver composição'}
+                  </button>
+                </div>
               )}
             </article>
           ))}
+        </section>
+      )}
+      {summary && showProjectionBreakdown && (
+        <section className="panel forecast-projection-breakdown" aria-label="Composição do saldo projetado">
+          <header><div><h2>Composição do saldo projetado</h2><p>{summary.projectionOpen ? 'Saldo real mais movimentações futuras e todas as previsões ainda em aberto com vencimento até a competência selecionada. Previsões vencidas também entram.' : 'Esta competência já terminou. O saldo projetado não se aplica; o valor mostrado é o saldo real atual.'}</p></div></header>
+          <dl>
+            <div><dt>Saldo real de todas as contas</dt><dd>{formatCurrencyDecimal(summary.realBalance)}</dd></div>
+            <div><dt>Movimentações futuras no Livro Caixa</dt><dd>{formatCurrencyDecimal(summary.futureCashMovements)}</dd></div>
+            <div><dt>Receitas previstas ainda não recebidas</dt><dd className="income">+ {formatCurrencyDecimal(summary.pendingIncome)}</dd></div>
+            <div><dt>Despesas previstas ainda não pagas <small>(inclui vencidas)</small></dt><dd className="expense">− {formatCurrencyDecimal(summary.pendingExpenses)}</dd></div>
+            <div className="forecast-projection-total"><dt>Saldo projetado</dt><dd>{formatCurrencyDecimal(summary.projectedBalance)}</dd></div>
+          </dl>
         </section>
       )}
       <section
