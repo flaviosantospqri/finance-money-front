@@ -63,13 +63,8 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [editingMovement, setEditingMovement] =
     useState<InvestmentMovement | null>(null);
   const [saving, setSaving] = useState(false);
-  const [applicationDate, setApplicationDate] = useState(today);
   const investmentAccounts = useMemo(
     () => accounts.filter((account) => account.type === "investment"),
-    [accounts],
-  );
-  const cashAccounts = useMemo(
-    () => accounts.filter((account) => account.type !== "investment"),
     [accounts],
   );
   const selectedApplication = applications.find(
@@ -153,8 +148,6 @@ export function InvestmentsPage({ month }: { month: string }) {
       accountId: String(form.get("accountId")),
       investmentType: String(form.get("investmentType")).trim(),
       institution: String(form.get("institution") || "").trim() || undefined,
-      openingBalance: normalizeMoney(String(form.get("openingBalance"))),
-      referenceDate: applicationDate,
       notes: String(form.get("notes") || "").trim() || undefined,
     };
     setSaving(true);
@@ -182,7 +175,7 @@ export function InvestmentsPage({ month }: { month: string }) {
     const account = await cashBookApi.createAccount(input);
     setShowAccountDialog(false);
     setAccountId(account.id);
-    toast.success("Conta de investimento cadastrada e disponível no Livro Caixa.");
+    toast.success("Conta de investimento cadastrada.");
     setRefresh((value) => value + 1);
   }
 
@@ -197,41 +190,10 @@ export function InvestmentsPage({ month }: { month: string }) {
     const origin = String(form.get("origin") || "").trim() || undefined;
     setSaving(true);
     try {
-      if (type === "contribution" || type === "withdrawal") {
-        const sourceAccountId =
-          type === "contribution"
-            ? movementDraft.sourceAccountId
-            : (selectedApplication?.accountId ?? "");
-        const destinationAccountId =
-          type === "contribution"
-            ? (selectedApplication?.accountId ?? "")
-            : movementDraft.sourceAccountId;
-        await investmentsApi.transfer({
-          occurredAt: date,
-          description:
-            origin ||
-            `${type === "contribution" ? "Aporte" : "Resgate"} — ${selectedApplication?.name ?? "Investimento"}`,
-          amount: normalized,
-          sourceAccountId,
-          destinationAccountId,
-          sourceApplicationId:
-            type === "withdrawal" ? applicationId : undefined,
-          destinationApplicationId:
-            type === "contribution" ? applicationId : undefined,
-          notes,
-        });
-      } else {
-        const input = {
-          occurredAt: date,
-          type,
-          amount: normalized,
-          origin,
-          notes,
-        };
-        if (editingMovement)
-          await investmentsApi.updateMovement(editingMovement.id, input);
-        else await investmentsApi.createMovement(applicationId, input);
-      }
+      const input = { occurredAt: date, type, amount: normalized, origin, notes };
+      if (editingMovement)
+        await investmentsApi.updateMovement(editingMovement.id, input);
+      else await investmentsApi.createMovement(applicationId, input);
       setMovementDraft(null);
       setEditingMovement(null);
       toast.success("Movimentação registrada.");
@@ -335,12 +297,12 @@ export function InvestmentsPage({ month }: { month: string }) {
                 <p>{selectedApplication.investmentType} · {selectedApplication.accountName}{selectedApplication.institution ? ` · ${selectedApplication.institution}` : ""}</p>
               </div>
               <div className="investment-detail-actions">
-                <button className="secondary-button" onClick={() => { setEditingApplication(selectedApplication); setApplicationDate(selectedApplication.referenceDate); setShowApplication(true); }}>
+                <button className="secondary-button" onClick={() => { setEditingApplication(selectedApplication); setShowApplication(true); }}>
                   <Icon name="edit" size={15} /> Editar aplicação
                 </button>
                 <button className="primary-button" disabled={!selectedApplication.active} onClick={() => {
                   setEditingMovement(null);
-                  setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "", sourceAccountId: cashAccounts[0]?.id ?? "" });
+                  setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "" });
                 }}>
                   <Icon name="plus" size={16} /> Nova movimentação
                 </button>
@@ -359,8 +321,7 @@ export function InvestmentsPage({ month }: { month: string }) {
           </section>
           <section className="panel cash-book-table-panel investments-ledger">
             <header className="cash-book-table-heading">
-              <div><h2>Histórico da aplicação</h2><p>Histórico completo; o saldo acumulado considera o saldo inicial e todas as movimentações, inclusive as retroativas.</p></div>
-              <span className="investment-opening-balance">Saldo inicial: <strong>{formatCurrencyDecimal(selectedApplication.openingBalance)}</strong></span>
+              <div><h2>Histórico da aplicação</h2><p>Movimentações em ordem cronológica; o saldo começa em zero e é atualizado a cada lançamento.</p></div>
             </header>
             {loading ? (
               <div className="cash-book-state">Carregando histórico…</div>
@@ -370,7 +331,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                 <p>Registre aportes, resgates e rendimentos. Cada lançamento ficará no histórico desta aplicação.</p>
                 <button className="primary-button" disabled={!selectedApplication.active} onClick={() => {
                   setEditingMovement(null);
-                  setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "", sourceAccountId: cashAccounts[0]?.id ?? "" });
+                  setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "" });
                 }}><Icon name="plus" size={15} /> Adicionar movimentação</button>
               </div>
             ) : (
@@ -387,13 +348,11 @@ export function InvestmentsPage({ month }: { month: string }) {
                         <td className="cash-book-money income">{movement.type === "income" ? formatCurrencyDecimal(movement.amount) : "—"}</td>
                         <td className="cash-book-money balance">{formatCurrencyDecimal(movement.balance)}</td>
                         <td><div className="investment-row-actions">
-                          {!movement.transferId ? <>
                             <button className="icon-button" aria-label="Editar movimentação" onClick={() => {
                               setEditingMovement(movement);
-                              setMovementDraft({ type: movement.type as "income" | "adjustment", amount: moneyInput(movement.amount), occurredAt: movement.occurredAt, origin: movement.origin ?? "", notes: movement.notes ?? "", sourceAccountId: "" });
+                              setMovementDraft({ type: movement.type, amount: moneyInput(movement.amount), occurredAt: movement.occurredAt, origin: movement.origin ?? "", notes: movement.notes ?? "" });
                             }}><Icon name="edit" size={15} /></button>
                             <button className="icon-button danger" aria-label="Excluir movimentação" onClick={() => void deleteMovement(movement)}><Icon name="trash" size={15} /></button>
-                          </> : <small className="investment-source-note">Livro Caixa</small>}
                         </div></td>
                       </tr>
                     ))}
@@ -412,7 +371,7 @@ export function InvestmentsPage({ month }: { month: string }) {
             </div>
             <div className="investments-toolbar-actions">
               <button className="secondary-button" onClick={() => setShowAccountDialog(true)}><Icon name="plus" size={15} /> Nova conta de investimento</button>
-              <button className="primary-button" disabled={!investmentAccounts.length} onClick={() => { setEditingApplication(null); setApplicationDate(today()); setShowApplication(true); }}><Icon name="plus" size={15} /> Nova aplicação</button>
+              <button className="primary-button" disabled={!investmentAccounts.length} onClick={() => { setEditingApplication(null); setShowApplication(true); }}><Icon name="plus" size={15} /> Nova aplicação</button>
             </div>
           </div>
           <section className="cash-book-summary investments-summary">
@@ -441,7 +400,7 @@ export function InvestmentsPage({ month }: { month: string }) {
                 <p>{inactiveApplicationCount ? "Existem aplicações inativas ocultas. Use “Mostrar inativas” para visualizá-las ou reativá-las." : investmentAccounts.length ? "Cadastre uma aplicação vinculada a uma conta de investimento para acompanhar aportes, resgates e rendimentos em um único histórico." : "Cadastre uma conta de investimento e depois crie a primeira aplicação."}</p>
                 <button className="primary-button" onClick={() => {
                   if (!investmentAccounts.length) setShowAccountDialog(true);
-                  else { setEditingApplication(null); setApplicationDate(today()); setShowApplication(true); }
+                  else { setEditingApplication(null); setShowApplication(true); }
                 }}><Icon name="plus" size={15} /> {investmentAccounts.length ? "Nova aplicação" : "Nova conta de investimento"}</button>
               </div>
             ) : (
@@ -454,10 +413,10 @@ export function InvestmentsPage({ month }: { month: string }) {
                         <td><button className="investment-open-link" onClick={() => setApplicationId(app.id)}><span className="investment-app-icon"><Icon name="investments" size={16} /></span><strong>{app.name}</strong><Icon name="chevron" size={14} /></button></td>
                         <td>{app.accountName}{app.institution ? ` · ${app.institution}` : ""}</td>
                         <td>{app.investmentType}</td>
-                        <td className="cash-book-money balance">{formatCurrencyDecimal(app.balance ?? app.openingBalance)}</td>
+                        <td className="cash-book-money balance">{formatCurrencyDecimal(app.balance ?? "0.00")}</td>
                         <td><span className={`investment-status${app.active ? " is-active" : ""}`}>{app.active ? "Ativa" : "Inativa"}</span></td>
                         <td><div className="investment-row-actions">
-                          <button className="icon-button" aria-label={`Editar ${app.name}`} onClick={() => { setEditingApplication(app); setApplicationDate(app.referenceDate); setShowApplication(true); }}><Icon name="edit" size={15} /></button>
+                          <button className="icon-button" aria-label={`Editar ${app.name}`} onClick={() => { setEditingApplication(app); setShowApplication(true); }}><Icon name="edit" size={15} /></button>
                           <button className="icon-button" title={app.active ? "Desativar aplicação (mantém o histórico)" : "Reativar aplicação"} aria-label={`${app.active ? "Desativar" : "Ativar"} ${app.name}`} onClick={async () => {
                             try {
                               await investmentsApi.updateApplication(app.id, { active: !app.active });
@@ -483,9 +442,7 @@ export function InvestmentsPage({ month }: { month: string }) {
         <InvestmentApplicationDialog
           application={editingApplication}
           accounts={investmentAccounts}
-          referenceDate={applicationDate}
           saving={saving}
-          onReferenceDateChange={setApplicationDate}
           onClose={() => {
             setShowApplication(false);
             setEditingApplication(null);
@@ -512,7 +469,6 @@ export function InvestmentsPage({ month }: { month: string }) {
       {movementDraft && (
         <InvestmentMovementDialog
           draft={movementDraft}
-          cashAccounts={cashAccounts}
           editing={editingMovement}
           saving={saving}
           onClose={() => {

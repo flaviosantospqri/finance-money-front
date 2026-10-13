@@ -1,8 +1,5 @@
 import type { FormEvent } from "react";
-import type {
-  FinancialAccount,
-  InvestmentMovement,
-} from "../../features/investments/investmentsApi";
+import type { InvestmentMovement } from "../../features/investments/investmentsApi";
 import { DatePicker } from "../ui/DatePicker";
 import { Icon } from "../ui/Icon";
 import { SelectField } from "../ui/SelectField";
@@ -13,12 +10,10 @@ export type InvestmentMovementDraft = {
   occurredAt: string;
   origin: string;
   notes: string;
-  sourceAccountId: string;
 };
 
 type Props = {
   draft: InvestmentMovementDraft;
-  cashAccounts: FinancialAccount[];
   editing: InvestmentMovement | null;
   saving: boolean;
   onClose: () => void;
@@ -28,14 +23,13 @@ type Props = {
 
 export function InvestmentMovementDialog({
   draft,
-  cashAccounts,
   editing,
   saving,
   onClose,
   onSubmit,
   onChange,
 }: Props) {
-  const isTransfer =
+  const isFlow =
     draft.type === "contribution" || draft.type === "withdrawal";
   const title = editing
     ? "Editar movimentação"
@@ -65,9 +59,7 @@ export function InvestmentMovementDialog({
           <div>
             <h2>{title}</h2>
             <p>
-              {isTransfer
-                ? "A operação será registrada também no Livro Caixa."
-                : "Registre rendimento ou ajuste de saldo."}
+              Este lançamento atualiza somente esta aplicação; não gera item no Livro Caixa.
             </p>
           </div>
           <button
@@ -94,15 +86,6 @@ export function InvestmentMovementDialog({
               />
               <input type="hidden" name="occurredAt" value={draft.occurredAt} />
             </label>
-            {isTransfer && (
-              <label className="form-field">
-                <span>
-                  Conta financeira de{" "}
-                  {draft.type === "contribution" ? "origem" : "destino"}
-                </span>
-                <SelectField ariaLabel="Conta financeira" value={draft.sourceAccountId} placeholder="Selecione" options={cashAccounts.map((account) => ({ value: account.id, label: account.name }))} onValueChange={(sourceAccountId) => onChange({ ...draft, sourceAccountId })} />
-              </label>
-            )}
             <label className="form-field">
               <span>Valor (R$)</span>
               <input
@@ -117,14 +100,14 @@ export function InvestmentMovementDialog({
             </label>
             <label className="form-field">
               <span>
-                {isTransfer ? "Descrição / origem" : "Origem / investidor"}
+                {isFlow ? "Descrição / origem" : "Origem / investidor"}
               </span>
               <input
                 name="origin"
                 maxLength={120}
                 defaultValue={editing?.origin ?? draft.origin}
                 placeholder={
-                  isTransfer
+                  isFlow
                     ? "Ex.: Transferência de aporte"
                     : "Ex.: Rendimento diário"
                 }

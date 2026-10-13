@@ -38,8 +38,6 @@ export type InvestmentApplication = {
   accountName: string;
   investmentType: string;
   institution: string | null;
-  openingBalance: string;
-  referenceDate: string;
   notes: string | null;
   active: boolean;
   balance?: string;
@@ -67,8 +65,6 @@ export type InvestmentApplicationInput = {
   accountId: string;
   investmentType: string;
   institution?: string;
-  openingBalance: string;
-  referenceDate: string;
   notes?: string;
 };
 
@@ -103,7 +99,7 @@ export const investmentsApi = {
     id: string,
     input: {
       occurredAt: string;
-      type: "income" | "adjustment";
+      type: "contribution" | "withdrawal" | "income" | "adjustment";
       amount: string;
       origin?: string;
       notes?: string;
@@ -117,7 +113,7 @@ export const investmentsApi = {
     id: string,
     input: {
       occurredAt: string;
-      type: "income" | "adjustment";
+      type: "contribution" | "withdrawal" | "income" | "adjustment";
       amount: string;
       origin?: string;
       notes?: string;
@@ -129,16 +125,6 @@ export const investmentsApi = {
     }),
   deleteMovement: (id: string) =>
     request(`/investments/transactions/${id}`, { method: "DELETE" }),
-  transfer: (input: {
-    occurredAt: string;
-    description: string;
-    amount: string;
-    sourceAccountId: string;
-    destinationAccountId: string;
-    sourceApplicationId?: string;
-    destinationApplicationId?: string;
-    notes?: string;
-  }) => request("/transfers", { method: "POST", body: JSON.stringify(input) }),
 };
 
 export type { FinancialAccount };

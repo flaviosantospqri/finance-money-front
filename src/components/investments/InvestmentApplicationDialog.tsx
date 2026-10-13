@@ -3,16 +3,13 @@ import type {
   FinancialAccount,
   InvestmentApplication,
 } from "../../features/investments/investmentsApi";
-import { DatePicker } from "../ui/DatePicker";
 import { Icon } from "../ui/Icon";
 import { SelectField } from "../ui/SelectField";
 
 type Props = {
   application: InvestmentApplication | null;
   accounts: FinancialAccount[];
-  referenceDate: string;
   saving: boolean;
-  onReferenceDateChange: (date: string) => void;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
@@ -20,9 +17,7 @@ type Props = {
 export function InvestmentApplicationDialog({
   application,
   accounts,
-  referenceDate,
   saving,
-  onReferenceDateChange,
   onClose,
   onSubmit,
 }: Props) {
@@ -90,28 +85,6 @@ export function InvestmentApplicationDialog({
                 defaultValue={application?.institution ?? ""}
                 placeholder="Ex.: Banco ou corretora"
               />
-            </label>
-            <label className="form-field">
-              <span>Saldo inicial</span>
-              <input
-                name="openingBalance"
-                required
-                inputMode="decimal"
-                defaultValue={
-                  application
-                    ? application.openingBalance.replace(".", ",")
-                    : "0,00"
-                }
-              />
-            </label>
-            <label className="form-field">
-              <span>Data de referência</span>
-              <DatePicker
-                ariaLabel="Data de referência"
-                value={referenceDate}
-                onChange={onReferenceDateChange}
-              />
-              <input type="hidden" name="referenceDate" value={referenceDate} />
             </label>
             <label className="form-field">
               <span>Observações</span>
