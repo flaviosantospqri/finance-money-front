@@ -63,8 +63,6 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [editingMovement, setEditingMovement] =
     useState<InvestmentMovement | null>(null);
   const [saving, setSaving] = useState(false);
-  const [movementPage, setMovementPage] = useState(1);
-  const [movementPageSize, setMovementPageSize] = useState(10);
   const investmentAccounts = useMemo(
     () => accounts.filter((account) => account.type === "investment"),
     [accounts],
@@ -72,12 +70,26 @@ export function InvestmentsPage({ month }: { month: string }) {
   const selectedApplication = applications.find(
     (app) => app.id === applicationId,
   );
-  const movementPageCount = Math.max(1, Math.ceil(movements.length / movementPageSize));
-  const currentMovementPage = Math.min(movementPage, movementPageCount);
-  const visibleMovements = movements.slice(
-    (currentMovementPage - 1) * movementPageSize,
-    currentMovementPage * movementPageSize,
-  );
+  const movementGroups = useMemo(() => {
+    const groups = new Map<string, { key: string; label: string; movements: InvestmentMovement[] }>();
+    for (const movement of movements) {
+      const key = movement.occurredAt.slice(0, 7);
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          key,
+          label: new Intl.DateTimeFormat("pt-BR", {
+            month: "long",
+            year: "numeric",
+          }).format(new Date(`${key}-01T12:00:00`)),
+          movements: [],
+        };
+        groups.set(key, group);
+      }
+      group.movements.push(movement);
+    }
+    return Array.from(groups.values());
+  }, [movements]);
   const accountApplications = applications.filter(
     (app) => !accountId || app.accountId === accountId,
   );
@@ -123,7 +135,7 @@ export function InvestmentsPage({ month }: { month: string }) {
         applicationId || undefined,
       ),
       applicationId
-        ? investmentsApi.getMovements(applicationId)
+        ? investmentsApi.getMovements(applicationId, month)
         : Promise.resolve([]),
     ])
       .then(([data, rows]) => {
@@ -147,10 +159,6 @@ export function InvestmentsPage({ month }: { month: string }) {
       active = false;
     };
   }, [month, accountId, applicationId, refresh]);
-
-  useEffect(() => {
-    setMovementPage(1);
-  }, [applicationId]);
 
   async function saveApplication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -333,58 +341,50 @@ export function InvestmentsPage({ month }: { month: string }) {
           </section>
           <section className="panel cash-book-table-panel investments-ledger">
             <header className="cash-book-table-heading">
-              <div><h2>Histórico da aplicação</h2><p>Movimentações em ordem cronológica; o saldo começa em zero e é atualizado a cada lançamento.</p></div>
-              <label className="cash-book-page-size investment-history-page-size">
-                <span>Exibir</span>
-                <SelectField ariaLabel="Movimentações do investimento por página" value={String(movementPageSize)} onValueChange={(value) => { setMovementPageSize(Number(value)); setMovementPage(1); }} options={[10, 50, 100].map((size) => ({ value: String(size), label: String(size) }))} />
-                <span>por página</span>
-              </label>
+              <div><h2>Movimentações da competência</h2><p>Lançamentos agrupados pelo mês e ano da data da movimentação.</p></div>
             </header>
             {loading ? (
               <div className="cash-book-state">Carregando histórico…</div>
             ) : !movements.length ? (
               <div className="investments-empty compact">
-                <h3>Esta aplicação ainda não tem movimentações</h3>
-                <p>Registre aportes, resgates e rendimentos. Cada lançamento ficará no histórico desta aplicação.</p>
+                <h3>Nenhuma movimentação nesta competência</h3>
+                <p>Use a navegação de mês no topo para consultar outra competência ou registre um novo lançamento.</p>
                 <button className="primary-button" disabled={!selectedApplication.active} onClick={() => {
                   setEditingMovement(null);
                   setMovementDraft({ type: "contribution", amount: "", occurredAt: today(), origin: "", notes: "" });
                 }}><Icon name="plus" size={15} /> Adicionar movimentação</button>
               </div>
             ) : (
-              <div className="table-scroll">
-                <table className="transactions-table cash-book-table investments-table investment-detail-table">
-                  <thead><tr><th>Data</th><th>Origem / descrição</th><th>Tipo</th><th className="cash-book-balance-heading">Valor</th><th className="cash-book-balance-heading">Rendimento</th><th className="cash-book-balance-heading">Saldo acumulado</th><th>Ações</th></tr></thead>
-                  <tbody>
-                    {visibleMovements.map((movement) => (
-                      <tr key={movement.id}>
-                        <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(`${movement.occurredAt}T12:00:00`))}</td>
-                        <td>{movement.origin || movement.notes || "—"}</td>
-                        <td><span className={`investment-type-chip ${movement.type}`}>{typeLabels[movement.type]}</span></td>
-                        <td className={`cash-book-money ${movement.type === "income" || movement.type === "contribution" ? "income" : ""}`}>{signedValue(movement)}</td>
-                        <td className="cash-book-money income">{movement.type === "income" ? formatCurrencyDecimal(movement.amount) : "—"}</td>
-                        <td className="cash-book-money balance">{formatCurrencyDecimal(movement.balance)}</td>
-                        <td><div className="investment-row-actions">
-                            <button className="icon-button" aria-label="Editar movimentação" onClick={() => {
-                              setEditingMovement(movement);
-                              setMovementDraft({ type: movement.type, amount: moneyInput(movement.amount), occurredAt: movement.occurredAt, origin: movement.origin ?? "", notes: movement.notes ?? "" });
-                            }}><Icon name="edit" size={15} /></button>
-                            <button className="icon-button danger" aria-label="Excluir movimentação" onClick={() => void deleteMovement(movement)}><Icon name="trash" size={15} /></button>
-                        </div></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {!loading && movements.length > 0 && (
-              <div className="table-footer">
-                <span>Exibindo {(currentMovementPage - 1) * movementPageSize + 1}–{Math.min(currentMovementPage * movementPageSize, movements.length)} de {movements.length} movimentações</span>
-                <div className="pagination">
-                  <button disabled={currentMovementPage <= 1} onClick={() => setMovementPage((page) => Math.max(1, page - 1))}>Anterior</button>
-                  <span>{currentMovementPage} / {movementPageCount}</span>
-                  <button disabled={currentMovementPage >= movementPageCount} onClick={() => setMovementPage((page) => Math.min(movementPageCount, page + 1))}>Próxima</button>
-                </div>
+              <div className="investment-history-periods">
+                {movementGroups.map((group) => (
+                  <section className="investment-history-period" key={group.key} aria-label={`Movimentações de ${group.label}`}>
+                    <h3>{group.label}</h3>
+                    <div className="table-scroll">
+                      <table className="transactions-table cash-book-table investments-table investment-detail-table">
+                        <thead><tr><th>Data</th><th>Origem / descrição</th><th>Tipo</th><th className="cash-book-balance-heading">Valor</th><th className="cash-book-balance-heading">Rendimento</th><th className="cash-book-balance-heading">Saldo acumulado</th><th>Ações</th></tr></thead>
+                        <tbody>
+                          {group.movements.map((movement) => (
+                            <tr key={movement.id}>
+                              <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(`${movement.occurredAt}T12:00:00`))}</td>
+                              <td>{movement.origin || movement.notes || "—"}</td>
+                              <td><span className={`investment-type-chip ${movement.type}`}>{typeLabels[movement.type]}</span></td>
+                              <td className={`cash-book-money ${movement.type === "income" || movement.type === "contribution" ? "income" : ""}`}>{signedValue(movement)}</td>
+                              <td className="cash-book-money income">{movement.type === "income" ? formatCurrencyDecimal(movement.amount) : "—"}</td>
+                              <td className="cash-book-money balance">{formatCurrencyDecimal(movement.balance)}</td>
+                              <td><div className="investment-row-actions">
+                                  <button className="icon-button" aria-label="Editar movimentação" onClick={() => {
+                                    setEditingMovement(movement);
+                                    setMovementDraft({ type: movement.type, amount: moneyInput(movement.amount), occurredAt: movement.occurredAt, origin: movement.origin ?? "", notes: movement.notes ?? "" });
+                                  }}><Icon name="edit" size={15} /></button>
+                                  <button className="icon-button danger" aria-label="Excluir movimentação" onClick={() => void deleteMovement(movement)}><Icon name="trash" size={15} /></button>
+                              </div></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
           </section>

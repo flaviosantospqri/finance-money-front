@@ -34,7 +34,9 @@ export function ForecastTable({
       Number(row.percentage) > 0 ||
       Number(row.budget) > 0,
   );
-  const rows = items.filter((item) => mode === 'all' || item.kind === mode);
+  const rows = items
+    .filter((item) => mode === 'all' || item.kind === mode)
+    .sort((a, b) => mode === 'all' ? a.dueDate.localeCompare(b.dueDate) : 0);
   return (
     <section className="panel cash-book-table-panel forecasts-list-panel">
       <header className="panel-heading cash-book-table-heading">
@@ -47,7 +49,9 @@ export function ForecastTable({
         <div className="forecast-empty-state">
           {mode === 'income'
             ? 'Nenhum recebimento previsto nesta competência.'
-            : 'Nenhuma conta a pagar nesta competência.'}
+            : mode === 'all'
+              ? 'Nenhuma conta a pagar ou recebimento previsto nesta competência.'
+              : 'Nenhuma conta a pagar nesta competência.'}
         </div>
       ) : (
         <div className="table-scroll cash-book-table-scroll">
@@ -79,6 +83,18 @@ export function ForecastTable({
                     <th>Pendente</th>
                     <th>Situação</th>
                   </>
+                ) : mode === 'all' ? (
+                  <>
+                    <th>Vencimento</th>
+                    <th>Pago / recebido em</th>
+                    <th>Descrição / Conta</th>
+                    <th>Categoria / Distribuição</th>
+                    <th>Tipo</th>
+                    <th>Previsto</th>
+                    <th>Realizado</th>
+                    <th>Pendente</th>
+                    <th>Situação</th>
+                  </>
                 ) : (
                   <>
                     <th className="forecast-table-description">Cliente / Descrição</th>
@@ -91,7 +107,6 @@ export function ForecastTable({
                     <th className="forecast-table-status">Situação</th>
                   </>
                 )}
-                {mode === 'all' && <th>Tipo</th>}
                 <th className={mode === 'income' ? 'forecast-table-actions' : undefined}>Ações</th>
               </tr>
             </thead>
@@ -135,6 +150,46 @@ export function ForecastTable({
                         )}
                       </td>
                     </>
+                  ) : mode === 'all' ? (
+                    <>
+                      <td>
+                        {new Intl.DateTimeFormat('pt-BR').format(new Date(`${item.dueDate}T12:00:00`))}
+                      </td>
+                      <td>
+                        {item.realizedAt
+                          ? new Intl.DateTimeFormat('pt-BR').format(new Date(`${item.realizedAt}T12:00:00`))
+                          : '—'}
+                      </td>
+                      <td className="description-cell forecast-table-description">
+                        <strong>{item.description}</strong>
+                        <small>
+                          {item.occurrenceCount > 1
+                            ? `Parcela ${item.occurrenceIndex}/${item.occurrenceCount}`
+                            : item.accountName || 'Conta não definida'}
+                        </small>
+                      </td>
+                      <td className="description-cell">
+                        {item.kind === 'expense' ? (
+                          <><strong>{item.categoryName}</strong><small>{item.categoryDestinationName}</small></>
+                        ) : (
+                          <div className="forecast-allocation-list">
+                            {visibleDestinations.map((destination) => (
+                              <span key={destination.id}>
+                                {destination.name} <b>{formatCurrencyDecimal(destination.valueType === 'fixed' ? destination.value : allocatedAmount(item.amount, destination.value))}</b>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td><span className={`forecast-kind ${item.kind}`}>{item.kind === 'income' ? 'Receita' : 'Despesa'}</span></td>
+                      <td className="forecast-table-money">{formatCurrencyDecimal(item.amount)}</td>
+                      <td className="forecast-table-money">{formatCurrencyDecimal(item.realized)}</td>
+                      <td className="forecast-table-money">{formatCurrencyDecimal(item.pending)}</td>
+                      <td className="forecast-table-status">
+                        <span className={`forecast-status ${item.status}`}>{statusLabel[item.status]}</span>
+                        {item.divergence && <small className="forecast-divergence">Acima do previsto</small>}
+                      </td>
+                    </>
                   ) : (
                     <>
                       <td className="description-cell">
@@ -171,9 +226,6 @@ export function ForecastTable({
                         )}
                       </td>
                     </>
-                  )}
-                  {mode === 'all' && (
-                    <td>{item.kind === 'income' ? 'Receita' : 'Despesa'}</td>
                   )}
                   <td className={mode === 'income' ? 'forecast-table-actions' : undefined}>
                     <div className="forecast-row-actions">

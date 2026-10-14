@@ -528,6 +528,9 @@ button { color: inherit; }
 .investments-empty p { max-width: 480px; margin: 0 0 7px; color: var(--text-soft); font-size: 13px; line-height: 1.5; }
 .investments-empty.compact { min-height: 170px; }
 .investments-ledger { border-color: var(--panel-border); box-shadow: 0 2px 9px rgb(16 24 40 / 4%); }
+.investment-history-periods { display: grid; gap: 15px; padding: 14px 0; }
+.investment-history-period { min-width: 0; }
+.investment-history-period h3 { margin: 0; padding: 0 17px 9px; color: var(--text); font-size: 14px; font-weight: 700; text-transform: capitalize; }
 .investments-table { min-width: 900px; }
 .investments-table td { height: 58px; }
 .investments-table td:nth-child(2) strong, .investments-table td:nth-child(2) small { display: block; }
@@ -562,6 +565,7 @@ button { color: inherit; }
 .forecasts-filters .search-field { min-width: 250px; flex: 1 1 280px; }
 .forecasts-table { min-width: 1080px; }
 .forecasts-table.expense, .forecasts-table.all { min-width: 1240px; }
+.forecasts-table.all { min-width: 1420px; }
 .forecasts-table.income { width: 100%; min-width: 1350px; table-layout: fixed; }
 .forecasts-table.income .forecast-col-description { width: 19%; }
 .forecasts-table.income .forecast-col-date { width: 9%; }
@@ -579,6 +583,14 @@ button { color: inherit; }
 .forecasts-table th, .forecasts-table td { white-space: nowrap; }
 .forecasts-table .description-cell { min-width: 220px; white-space: normal; }
 .forecasts-table .description-cell small, .forecast-subline { display: block; margin-top: 4px; color: var(--text-soft); font-size: 12px; }
+.forecasts-table.all .forecast-table-money { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.forecasts-table.all .forecast-table-status { text-align: center; }
+.forecast-kind { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 99px; color: var(--text-soft); background: var(--surface-muted); font-size: 12px; font-weight: 650; }
+.forecast-kind.income { color: var(--green); background: var(--green-soft); }
+.forecast-kind.expense { color: var(--red); background: var(--red-soft); }
+.forecast-allocation-list { display: grid; gap: 3px; min-width: 150px; color: var(--text-soft); font-size: 11px; }
+.forecast-allocation-list span { display: flex; justify-content: space-between; gap: 8px; }
+.forecast-allocation-list b { color: var(--text); white-space: nowrap; }
 .forecast-status { display: inline-flex; padding: 5px 9px; border-radius: 99px; color: var(--text-soft); background: var(--surface-muted); font-size: 12px; font-weight: 650; }
 .forecast-status.realized { color: var(--green); background: var(--green-soft); }
 .forecast-status.partial, .forecast-status.overdue { color: var(--amber); background: var(--amber-soft); }

@@ -317,17 +317,15 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
             ['Receitas previstas', summary.incomePlanned, 'income'],
             ['Despesas previstas', summary.expensePlanned, 'expense'],
             ['Comprometido pendente', summary.committedPending, 'neutral'],
-            ['Saldo projetado', summary.projectedBalance, 'balance'],
+            ['Saldo final', summary.resultProjected, 'balance'],
           ].map(([label, value, tone]) => (
             <article className={`cash-book-summary-card ${tone}`} key={label}>
               <div>
                 <span>{label}</span>
               </div>
               <strong>{formatCurrencyDecimal(value)}</strong>
-              {label === 'Saldo projetado' && (
+              {label === 'Saldo final' && (
                 <div className="forecast-projection-summary">
-                  <small>{summary.projectionOpen ? 'Saldo real + valores em aberto até esta competência' : 'Competência encerrada · exibindo saldo real atual'}</small>
-                  <small>Real {formatCurrencyDecimal(summary.realBalance)} · futuro {formatCurrencyDecimal(summary.futureNet)}</small>
                   <button className="text-link" type="button" aria-expanded={showProjectionBreakdown} onClick={() => setShowProjectionBreakdown((visible) => !visible)}>
                     {showProjectionBreakdown ? 'Ocultar composição' : 'Ver composição'}
                   </button>
@@ -338,14 +336,12 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         </section>
       )}
       {summary && showProjectionBreakdown && (
-        <section className="panel forecast-projection-breakdown" aria-label="Composição do saldo projetado">
-          <header><div><h2>Composição do saldo projetado</h2><p>{summary.projectionOpen ? 'Saldo real mais movimentações futuras e todas as previsões ainda em aberto com vencimento até a competência selecionada. Previsões vencidas também entram.' : 'Esta competência já terminou. O saldo projetado não se aplica; o valor mostrado é o saldo real atual.'}</p></div></header>
+        <section className="panel forecast-projection-breakdown" aria-label="Composição do saldo final">
+          <header><div><h2>Composição do saldo final</h2><p>Receitas previstas menos despesas previstas na competência selecionada.</p></div></header>
           <dl>
-            <div><dt>Saldo real de todas as contas</dt><dd>{formatCurrencyDecimal(summary.realBalance)}</dd></div>
-            <div><dt>Movimentações futuras no Livro Caixa</dt><dd>{formatCurrencyDecimal(summary.futureCashMovements)}</dd></div>
-            <div><dt>Receitas previstas ainda não recebidas</dt><dd className="income">+ {formatCurrencyDecimal(summary.pendingIncome)}</dd></div>
-            <div><dt>Despesas previstas ainda não pagas <small>(inclui vencidas)</small></dt><dd className="expense">− {formatCurrencyDecimal(summary.pendingExpenses)}</dd></div>
-            <div className="forecast-projection-total"><dt>Saldo projetado</dt><dd>{formatCurrencyDecimal(summary.projectedBalance)}</dd></div>
+            <div><dt>Receitas previstas</dt><dd className="income">+ {formatCurrencyDecimal(summary.incomePlanned)}</dd></div>
+            <div><dt>Despesas previstas</dt><dd className="expense">− {formatCurrencyDecimal(summary.expensePlanned)}</dd></div>
+            <div className="forecast-projection-total"><dt>Saldo final</dt><dd>{formatCurrencyDecimal(summary.resultProjected)}</dd></div>
           </dl>
         </section>
       )}
@@ -428,10 +424,10 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           </article>
         )}
         <article className="forecast-overall-totals">
-          <div className="forecast-tab-total-heading"><strong>Total geral · Todas as abas</strong><small>Receitas menos despesas</small></div>
+          <div className="forecast-tab-total-heading"><strong>Resumo · Todas as abas</strong><small>Resultado = receitas − despesas em cada linha</small></div>
           <div className="forecast-overall-table-scroll">
             <table className="forecast-overall-table">
-              <thead><tr><th></th><th>Receitas</th><th>Despesas</th><th>Saldo líquido</th></tr></thead>
+              <thead><tr><th></th><th>Receitas</th><th>Despesas</th><th>Resultado</th></tr></thead>
               <tbody>{totalFields.map(({ key, label }) => (
                 <tr key={key}>
                   <th scope="row">{label}</th>
@@ -453,11 +449,24 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         </section>
       ) : (
         <>
-          {(view === 'expense' || view === 'all' || view.startsWith('group:')) && (
+          {view === 'all' && (
+            <ForecastTable
+              title="Todas as previsões"
+              description="Contas a pagar e recebimentos previstos em uma única lista."
+              items={items.filter((item) => item.status !== 'cancelled')}
+              distribution={distribution}
+              mode="all"
+              onView={openDetails}
+              onEdit={(item) => setForm({ item, scope: 'occurrence' })}
+              onDuplicate={duplicate}
+              onRemove={setPendingCancel}
+            />
+          )}
+          {(view === 'expense' || view.startsWith('group:')) && (
             <ForecastTable
               title={view.startsWith('group:') ? groups.find((group) => `group:${group.id}` === view)?.name ?? 'Contas a pagar' : 'Contas a pagar'}
               description={view.startsWith('group:') ? 'Despesas organizadas nesta aba.' : 'Compromissos previstos e pagamentos já conciliados.'}
-              items={items.filter((item) => item.kind === 'expense' && (view === 'all' || (view.startsWith('group:') ? item.groupId === view.slice(6) : !item.groupId)))}
+              items={items.filter((item) => item.kind === 'expense' && (view.startsWith('group:') ? item.groupId === view.slice(6) : !item.groupId))}
               distribution={distribution}
               mode="expense"
               onView={openDetails}
@@ -466,25 +475,23 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
               onRemove={setPendingCancel}
             />
           )}
-          {(view === 'income' || view === 'all') && (
+          {view === 'income' && (
             <>
-              {view === 'income' && (
-                <section className="panel forecast-distribution">
-                  <header className="panel-heading">
-                    <div>
-                      <h2>Repasses desta competência</h2>
-                      <p>
-                        Consulte os valores por destinação na tabela. As regras globais e ajustes mensais ficam em Repasses.
-                      </p>
-                    </div>
-                    <div className="distribution-actions">
-                      <button className="secondary-button" onClick={onManageRepasses}>
-                        Gerenciar repasses
-                      </button>
-                    </div>
-                  </header>
-                </section>
-              )}
+              <section className="panel forecast-distribution">
+                <header className="panel-heading">
+                  <div>
+                    <h2>Repasses desta competência</h2>
+                    <p>
+                      Consulte os valores por destinação na tabela. As regras globais e ajustes mensais ficam em Repasses.
+                    </p>
+                  </div>
+                  <div className="distribution-actions">
+                    <button className="secondary-button" onClick={onManageRepasses}>
+                      Gerenciar repasses
+                    </button>
+                  </div>
+                </header>
+              </section>
               <ForecastTable
                 title="Recebimentos previstos"
                 description="Clientes, datas e divisão planejada de cada recebimento."
