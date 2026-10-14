@@ -8,6 +8,7 @@ import type {
   FinancialCategory,
 } from '../../features/cash-book/cashBookApi';
 import type { Forecast, ForecastGroup, ForecastInput } from '../../features/forecasts/forecastsApi';
+import { formatCurrencyDecimal } from '../../lib/formatters';
 import { currentDate, normalizeMoney } from './forecastUtils';
 
 export function ForecastForm({
@@ -142,6 +143,26 @@ export function ForecastForm({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
+              {item &&
+                Number(item.realized) > 0 &&
+                Math.round(Number(item.realized) * 100) !==
+                  Math.round(Number(item.amount) * 100) && (
+                  <>
+                    <button
+                      className="text-link"
+                      type="button"
+                      onClick={() => {
+                        setAmount(item.realized);
+                        setEditScope('occurrence');
+                      }}
+                    >
+                      Usar valor realizado ({formatCurrencyDecimal(item.realized)})
+                    </button>
+                    <small>
+                      Ajusta somente esta ocorrência e remove a diferença pendente.
+                    </small>
+                  </>
+                )}
             </label>
             <label className="form-field">
               <span>Vencimento / recebimento esperado</span>
