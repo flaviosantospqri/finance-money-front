@@ -223,7 +223,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       {error && !modalOpen && <div className="cash-book-error" role="alert">{error}</div>}
       <section className="panel repasses-distribution">
         <header className="cash-book-table-heading repasses-distribution-heading">
-          <div><h2>Distribuição da competência</h2><p>Os ajustes abaixo valem somente para o mês selecionado e aparecem nos recebimentos previstos.</p></div>
+          <div><h2>Distribuição da competência</h2><p>Os ajustes abaixo valem somente para o mês selecionado. Uma nova regra global substitui os ajustes a partir da vigência.</p></div>
           <MonthNavigator value={month} onChange={onMonthChange} ariaLabel="Competência da distribuição" />
         </header>
         {distributionLoading ? <div className="repasses-empty"><span className="loading-spinner" /> Carregando distribuição…</div> : distribution.length === 0 ? <div className="repasses-empty">Não há destinações para esta competência. Cadastre uma regra de repasse para começar.</div> : (
@@ -258,7 +258,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       </section>
 
       <section className="panel repasses-list">
-        <header className="cash-book-table-heading repasses-rules-heading"><div><h2>Regras globais</h2><p>Uma nova vigência atualiza este mês em diante; competências anteriores ficam preservadas.</p></div></header>
+        <header className="cash-book-table-heading repasses-rules-heading"><div><h2>Regras globais</h2><p>Uma nova vigência substitui os ajustes mensais a partir deste mês; competências anteriores ficam preservadas.</p></div></header>
         {loading ? <div className="repasses-empty">Carregando regras…</div> : rows.length === 0 ? <div className="repasses-empty">Nenhuma regra cadastrada. Crie um repasse para adicionar uma destinação personalizada.</div> : (
           <div className="table-scroll"><table className="transactions-table repasses-table"><thead><tr><th>Destinação</th><th>Valor</th><th>Início da vigência</th><th>Fim da vigência</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
             {rows.map((row) => {
@@ -279,7 +279,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
             })}
           </tbody></table></div>
         )}
-        <p className="repasses-history-note">A vigência global vale do mês inicial em diante. Para alterar um único mês, escolha a competência acima e salve a distribuição mensal.</p>
+        <p className="repasses-history-note">A vigência global vale do mês inicial em diante e substitui os ajustes desse mês e dos próximos. Para uma exceção pontual, salve a distribuição mensal da competência.</p>
       </section>
 
       {modalOpen && (
@@ -300,7 +300,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
                 <label className="form-field"><span>Início da vigência</span><DatePicker mode="month" ariaLabel="Início da vigência" value={form.effectiveFrom < currentPeriod() ? currentPeriod() : form.effectiveFrom} onChange={(value) => updateForm('effectiveFrom', value)} /></label>
                 <div className="form-field"><span>Fim da vigência <small>(opcional)</small></span>{form.effectiveTo ? <div className="repasse-end-date"><DatePicker mode="month" ariaLabel="Fim da vigência" value={form.effectiveTo} onChange={(value) => updateForm('effectiveTo', value)} /><button type="button" className="text-link" onClick={() => updateForm('effectiveTo', '')}>Remover fim</button></div> : <button type="button" className="secondary-button repasse-set-end" onClick={() => updateForm('effectiveTo', form.effectiveFrom)}>Definir mês final</button>}</div>
               </div>
-              <p className="repasse-form-note">Sem fim definido, a regra segue vigente até uma nova alteração. Meses anteriores permanecem preservados.</p>
+              <p className="repasse-form-note">Sem fim definido, a regra segue vigente até uma nova alteração. Ao salvar, ajustes mensais a partir desta vigência serão substituídos; os meses anteriores permanecem preservados.</p>
               <div className="repasse-form-actions">
                 <button type="button" className="secondary-button" onClick={() => setModalOpen(false)} disabled={saving}>Cancelar</button>
                 <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Salvando…' : editing ? 'Salvar alteração' : 'Salvar distribuição'}</button>
