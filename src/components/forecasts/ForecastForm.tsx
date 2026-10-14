@@ -124,7 +124,8 @@ export function ForecastForm({
                   setCategoryId(
                     categories.find((c) => c.nature === next)?.id ?? '',
                   );
-                }} />
+                }} disabled={!!item} />
+              {item && <small>O tipo não pode ser alterado após o cadastro da previsão.</small>}
             </label>
             <label className="form-field">
               <span>Descrição</span>

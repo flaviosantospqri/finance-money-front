@@ -73,6 +73,9 @@ export type ForecastInput = {
   notes?: string;
   groupId?: string | null;
 };
+export type ForecastUpdateInput = Partial<
+  Omit<ForecastInput, 'kind' | 'recurrence' | 'occurrenceCount'>
+>;
 export type ForecastGroup = { id: string; name: string };
 export type FinancialRepasse = {
   id: string;
@@ -152,7 +155,7 @@ export const forecastsApi = {
     }),
   update: (
     id: string,
-    data: Partial<ForecastInput>,
+    data: ForecastUpdateInput,
     scope: 'occurrence' | 'future',
   ) =>
     request(`/financial-forecasts/${id}?scope=${scope}`, {

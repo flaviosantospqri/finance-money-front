@@ -133,8 +133,22 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     setBusy(true);
     setError('');
     try {
-      if (id) await forecastsApi.update(id, input, scope);
-      else await forecastsApi.create(input);
+      if (id) {
+        await forecastsApi.update(
+          id,
+          {
+            description: input.description,
+            amount: input.amount,
+            dueDate: input.dueDate,
+            categoryId: input.categoryId,
+            accountId: input.accountId,
+            destinationId: input.destinationId,
+            notes: input.notes,
+            groupId: input.groupId,
+          },
+          scope,
+        );
+      } else await forecastsApi.create(input);
       setForm(null);
       toast.success(id ? 'Previsão atualizada.' : 'Previsão cadastrada.');
       await load();
