@@ -151,7 +151,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       await (editing ? forecastsApi.updateRepasse(editing.id, payload) : forecastsApi.createRepasse(payload));
       setModalOpen(false);
       toast.success(editing ? 'Regra de repasse atualizada.' : 'Regra de repasse criada. Destinação disponível em Previsões.');
-      await load();
+      await Promise.all([load(), loadDistribution()]);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível salvar o repasse.');
     } finally {
@@ -167,7 +167,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       setPendingDelete(null);
       setModalOpen(false);
       toast.success('Vigência removida. Os meses anteriores foram preservados.');
-      await load();
+      await Promise.all([load(), loadDistribution()]);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível remover o repasse.');
       setPendingDelete(null);
