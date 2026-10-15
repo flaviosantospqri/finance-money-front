@@ -135,6 +135,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
   }, 0n);
   const hasFixedAmounts = distribution.some((row) => row.valueType === 'fixed');
   const distributionIsValid = hasFixedAmounts ? percentageTotal <= 10000n : percentageTotal === 10000n;
+  const distributionUsesGlobalRules = month >= currentPeriod();
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -186,7 +187,10 @@ export function RepassesPage({ month, onMonthChange }: Props) {
         value,
       })));
       setDistribution(saved);
-      toast.success(`Distribuição de ${formatPeriod(month)} salva.`);
+      await load();
+      toast.success(distributionUsesGlobalRules
+        ? `Distribuição salva. As regras globais foram atualizadas a partir de ${formatPeriod(month)}.`
+        : `Distribuição de ${formatPeriod(month)} salva como ajuste histórico.`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível salvar a distribuição.');
     } finally {
@@ -201,6 +205,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
     setDistributionSaving(true);
     try {
       const copied = await forecastsApi.copyDistributions(month, target);
+      await load();
       toast.success(`Distribuição copiada para ${formatPeriod(target)}.`);
       if (target === month) setDistribution(copied);
     } catch (reason) {
@@ -223,7 +228,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       {error && !modalOpen && <div className="cash-book-error" role="alert">{error}</div>}
       <section className="panel repasses-distribution">
         <header className="cash-book-table-heading repasses-distribution-heading">
-          <div><h2>Distribuição da competência</h2><p>Os ajustes abaixo valem somente para o mês selecionado. Uma nova regra global substitui os ajustes a partir da vigência.</p></div>
+          <div><h2>Distribuição da competência</h2><p>{distributionUsesGlobalRules ? 'Salvar aqui atualiza as regras globais a partir desta competência. Os meses anteriores ficam preservados.' : 'Esta competência passada aceita um ajuste histórico, sem alterar as regras globais atuais.'}</p></div>
           <MonthNavigator value={month} onChange={onMonthChange} ariaLabel="Competência da distribuição" />
         </header>
         {distributionLoading ? <div className="repasses-empty"><span className="loading-spinner" /> Carregando distribuição…</div> : distribution.length === 0 ? <div className="repasses-empty">Não há destinações para esta competência. Cadastre uma regra de repasse para começar.</div> : (
@@ -258,7 +263,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       </section>
 
       <section className="panel repasses-list">
-        <header className="cash-book-table-heading repasses-rules-heading"><div><h2>Regras globais</h2><p>Uma nova vigência substitui os ajustes mensais a partir deste mês; competências anteriores ficam preservadas.</p></div></header>
+        <header className="cash-book-table-heading repasses-rules-heading"><div><h2>Regras globais</h2><p>Salvar uma distribuição atual ou futura atualiza estas regras a partir da competência escolhida; o histórico anterior fica preservado.</p></div></header>
         {loading ? <div className="repasses-empty">Carregando regras…</div> : rows.length === 0 ? <div className="repasses-empty">Nenhuma regra cadastrada. Crie um repasse para adicionar uma destinação personalizada.</div> : (
           <div className="table-scroll"><table className="transactions-table repasses-table"><thead><tr><th>Destinação</th><th>Valor</th><th>Início da vigência</th><th>Fim da vigência</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
             {rows.map((row) => {
@@ -279,7 +284,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
             })}
           </tbody></table></div>
         )}
-        <p className="repasses-history-note">A vigência global vale do mês inicial em diante e substitui os ajustes desse mês e dos próximos. Para uma exceção pontual, salve a distribuição mensal da competência.</p>
+        <p className="repasses-history-note">A tabela e os cartões compartilham as regras da competência atual ou futura. Competências anteriores podem receber ajustes sem alterar as regras atuais.</p>
       </section>
 
       {modalOpen && (
