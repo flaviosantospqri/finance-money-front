@@ -50,9 +50,32 @@ function sumForecastField(rows: Forecast[], field: 'amount' | 'realized' | 'pend
 }
 
 function sumForecastNet(rows: Forecast[], field: 'amount' | 'realized' | 'pending') {
+  // Alocação percentual para investimentos não reduz o resultado operacional.
+  const operatingRows = rows.filter(
+    (row) =>
+      !(
+        row.kind === 'expense' &&
+        row.amountType === 'income_percentage' &&
+        /(^|\W)investimentos?(\W|$)/i.test(row.categoryName ?? '')
+      ),
+  );
   return centsToDecimal(
-    sumForecastCents(rows.filter((row) => row.kind === 'income'), field) -
-      sumForecastCents(rows.filter((row) => row.kind === 'expense'), field),
+    sumForecastCents(operatingRows.filter((row) => row.kind === 'income'), field) -
+      sumForecastCents(operatingRows.filter((row) => row.kind === 'expense'), field),
+  );
+}
+
+function sumForecastExpenses(rows: Forecast[], field: 'amount' | 'realized' | 'pending') {
+  return sumForecastField(
+    rows.filter(
+      (row) =>
+        row.kind === 'expense' &&
+        !(
+          row.amountType === 'income_percentage' &&
+          /(^|\W)investimentos?(\W|$)/i.test(row.categoryName ?? '')
+        ),
+    ),
+    field,
   );
 }
 
@@ -466,7 +489,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
                 <tr key={key}>
                   <th scope="row">{label}</th>
                   <td>{formatCurrencyDecimal(sumForecastField(activeIncomeRows, key))}</td>
-                  <td>{formatCurrencyDecimal(sumForecastField(activeExpenseRows, key))}</td>
+                  <td>{formatCurrencyDecimal(sumForecastExpenses(activeExpenseRows, key))}</td>
                   <td><strong>{formatCurrencyDecimal(sumForecastNet(activeRows, key))}</strong></td>
                 </tr>
               ))}</tbody>
