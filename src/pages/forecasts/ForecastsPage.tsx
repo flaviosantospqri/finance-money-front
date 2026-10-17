@@ -471,32 +471,33 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           <Icon name="plus" size={14} /> Nova aba
         </button>
       </nav>
-      <section className={`forecast-tab-totals${view === 'all' ? ' is-single' : ''}`} aria-label="Totais das previsões">
-        {view !== 'all' && (
-          <article>
-            <div className="forecast-tab-total-heading"><strong>Total da aba · {currentTabName}</strong><small>Mês selecionado e filtros ativos</small></div>
-            <dl>{totalFields.map(({ key, label }) => (
-              <div key={key}><dt>{label}</dt><dd>{formatCurrencyDecimal(sumForecastField(currentTabRows, key))}</dd></div>
-            ))}</dl>
+      {view === 'all' ? (
+        <section className="forecast-tab-totals is-single" aria-label="Resumo de todas as abas">
+          <article className="forecast-overall-totals">
+            <div className="forecast-tab-total-heading"><strong>Resumo · Todas as abas</strong><small>Resultado = receitas − despesas em cada linha</small></div>
+            <div className="forecast-overall-table-scroll">
+              <table className="forecast-overall-table">
+                <thead><tr><th></th><th>Receitas</th><th>Despesas</th><th>Resultado</th></tr></thead>
+                <tbody>{totalFields.map(({ key, label }) => (
+                  <tr key={key}>
+                    <th scope="row">{label}</th>
+                    <td>{formatCurrencyDecimal(sumForecastField(activeIncomeRows, key))}</td>
+                    <td>{formatCurrencyDecimal(sumForecastExpenses(activeExpenseRows, key))}</td>
+                    <td><strong>{formatCurrencyDecimal(sumForecastNet(activeRows, key))}</strong></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
           </article>
-        )}
-        <article className="forecast-overall-totals">
-          <div className="forecast-tab-total-heading"><strong>Resumo · Todas as abas</strong><small>Resultado = receitas − despesas em cada linha</small></div>
-          <div className="forecast-overall-table-scroll">
-            <table className="forecast-overall-table">
-              <thead><tr><th></th><th>Receitas</th><th>Despesas</th><th>Resultado</th></tr></thead>
-              <tbody>{totalFields.map(({ key, label }) => (
-                <tr key={key}>
-                  <th scope="row">{label}</th>
-                  <td>{formatCurrencyDecimal(sumForecastField(activeIncomeRows, key))}</td>
-                  <td>{formatCurrencyDecimal(sumForecastExpenses(activeExpenseRows, key))}</td>
-                  <td><strong>{formatCurrencyDecimal(sumForecastNet(activeRows, key))}</strong></td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        </article>
-      </section>
+        </section>
+      ) : (
+        <section className="forecast-tab-current-total" aria-label={`Totais da aba ${currentTabName}`}>
+          <div className="forecast-tab-current-heading"><strong>Total da aba · {currentTabName}</strong><small>Mês selecionado e filtros ativos</small></div>
+          <dl>{totalFields.map(({ key, label }) => (
+            <div key={key}><dt>{label}</dt><dd>{formatCurrencyDecimal(sumForecastField(currentTabRows, key))}</dd></div>
+          ))}</dl>
+        </section>
+      )}
       {loading ? (
         <section className="panel">
           <div className="cash-book-state">

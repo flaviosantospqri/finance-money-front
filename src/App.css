@@ -699,6 +699,14 @@ button { color: inherit; }
 .forecast-tab-totals dl div { display: grid; gap: 4px; }
 .forecast-tab-totals dt { color: var(--text-soft); font-size: 11px; }
 .forecast-tab-totals dd { margin: 0; font-size: 14px; font-weight: 700; }
+.forecast-tab-current-total { min-width: 0; min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 22px; overflow-x: auto; padding: 8px 14px; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); scrollbar-width: thin; }
+.forecast-tab-current-heading { flex: 0 0 auto; display: flex; align-items: baseline; gap: 9px; white-space: nowrap; }
+.forecast-tab-current-heading strong { color: var(--text); font-size: 12px; }
+.forecast-tab-current-heading small { color: var(--text-soft); font-size: 10px; }
+.forecast-tab-current-total dl { flex: 1 0 auto; display: flex; justify-content: flex-end; gap: clamp(16px, 4vw, 52px); margin: 0; }
+.forecast-tab-current-total dl div { display: flex; align-items: baseline; gap: 7px; white-space: nowrap; }
+.forecast-tab-current-total dt { color: var(--text-soft); font-size: 11px; }
+.forecast-tab-current-total dd { margin: 0; color: var(--text); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .forecast-overall-table-scroll { width: 100%; overflow-x: auto; }
 .forecast-overall-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .forecast-overall-table th, .forecast-overall-table td { padding: 7px 9px; border-top: 1px solid var(--row-border); text-align: right; white-space: nowrap; }
