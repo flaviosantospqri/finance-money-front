@@ -134,16 +134,23 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       setHasAccounts(accounts.length > 0);
       setAnalytics(cashData);
       setInvestmentRows(investmentData);
+      const income = sumMoney(cashData.monthly.map((row) => row.income));
+      // Investment allocations appear in gross cash-book outflows; deduct them before showing operating expenses.
+      const expensesBeforeAportes = sumMoney(cashData.monthly.map((row) => row.expenses));
+      const expenses = subtractMoney(expensesBeforeAportes, investmentSummary.contributions);
       setTotals({
-        income: sumMoney(cashData.monthly.map((row) => row.income)),
-        expenses: sumMoney(cashData.monthly.map((row) => row.expenses)),
-        net: sumMoney(cashData.monthly.map((row) => row.net)),
+        income,
+        expenses,
+        net: subtractMoney(subtractMoney(income, expenses), investmentSummary.contributions),
         contributions: investmentSummary.contributions,
       });
+      const previousIncome = sumMoney(previousCashData.monthly.map((row) => row.income));
+      const previousExpensesBeforeAportes = sumMoney(previousCashData.monthly.map((row) => row.expenses));
+      const previousExpenses = subtractMoney(previousExpensesBeforeAportes, previousInvestmentSummary.contributions);
       setComparison({
-        income: sumMoney(previousCashData.monthly.map((row) => row.income)),
-        expenses: sumMoney(previousCashData.monthly.map((row) => row.expenses)),
-        net: sumMoney(previousCashData.monthly.map((row) => row.net)),
+        income: previousIncome,
+        expenses: previousExpenses,
+        net: subtractMoney(subtractMoney(previousIncome, previousExpenses), previousInvestmentSummary.contributions),
         contributions: previousInvestmentSummary.contributions,
       });
     }).catch((reason: unknown) => {
@@ -152,15 +159,20 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
     return () => { active = false; };
   }, [fromMonth, month, previousFromMonth, previousToMonth, retryKey]);
 
-  const monthlyRows = useMemo(() => analytics.monthly.map((row) => ({
-    ...row,
-    incomeValue: numeric(row.income),
-    expenseValue: numeric(row.expenses),
-    netValue: numeric(row.net),
-    debtValue: numeric(row.debtPayments),
-    investmentValue: numeric(investmentRows.find((item) => item.month === row.month)?.endingBalance),
-    contributionValue: numeric(investmentRows.find((item) => item.month === row.month)?.contributions),
-  })), [analytics.monthly, investmentRows]);
+  const monthlyRows = useMemo(() => analytics.monthly.map((row) => {
+    const investment = investmentRows.find((item) => item.month === row.month);
+    const contributionValue = numeric(investment?.contributions);
+    const expenseValue = numeric(row.expenses) - contributionValue;
+    return {
+      ...row,
+      incomeValue: numeric(row.income),
+      expenseValue,
+      netValue: numeric(row.income) - expenseValue - contributionValue,
+      debtValue: numeric(row.debtPayments),
+      investmentValue: numeric(investment?.endingBalance),
+      contributionValue,
+    };
+  }), [analytics.monthly, investmentRows]);
 
   const periodCategories = useMemo(() => analytics.categoryExpenses.filter((row) => row.month >= fromMonth && row.month <= month), [analytics.categoryExpenses, fromMonth, month]);
   const rootSlices = useMemo(() => {
@@ -217,8 +229,8 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       <section className="dashboard-metrics" aria-label="Indicadores do período">
         <MetricCard label="Receitas do período" value={totals.income} icon="arrow-down" tone="positive" note={periodLabel} />
         <MetricCard label="Despesas sem aportes" value={totals.expenses} icon="arrow-up" tone="negative" note={`Livro Caixa · ${periodLabel}`} />
-        <MetricCard label="Resultado do período" value={totals.net} icon="trend" tone={numeric(totals.net) < 0 ? 'negative' : 'positive'} note="Receitas menos despesas; aportes separados" />
-        <MetricCard label="Margem líquida" value={`${margin.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} icon="trend" tone={margin < 0 ? 'negative' : 'positive'} note="Resultado ÷ receitas" format="text" />
+        <MetricCard label="Saldo após gastos e aportes" value={totals.net} icon="trend" tone={numeric(totals.net) < 0 ? 'negative' : 'positive'} note="Receitas − despesas − aportes" />
+        <MetricCard label="Saldo livre sobre receitas" value={`${margin.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} icon="trend" tone={margin < 0 ? 'negative' : 'positive'} note="Saldo após aportes ÷ receitas" format="text" />
         <MetricCard label="Aportes em investimentos" value={totals.contributions} icon="investments" tone="positive" note={periodLabel} />
       </section>
 
