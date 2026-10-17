@@ -462,6 +462,15 @@ button { color: inherit; }
 .investment-evolution-comparison-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 4px; color: var(--text-soft); font-size: 12px; }
 .investment-evolution-comparison-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .investment-evolution-comparison-legend i { width: 10px; height: 10px; display: inline-block; border-radius: 2px; }
+.investment-year-tooltip { width: min(270px, 75vw); max-height: min(360px, 55vh); overflow: auto; padding: 11px 12px; border: 1px solid var(--panel-border); border-radius: 9px; color: var(--text); background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 24%); }
+.investment-year-tooltip-title { display: block; margin-bottom: 8px; font-size: 13px; }
+.investment-year-tooltip section + section { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--row-border); }
+.investment-year-tooltip h3 { margin: 0 0 5px; font-size: 12px; }
+.investment-year-tooltip dl { display: grid; gap: 4px; margin: 0; }
+.investment-year-tooltip dl > div { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+.investment-year-tooltip dt { color: var(--text-soft); }
+.investment-year-tooltip dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.investment-year-tooltip .investment-year-tooltip-total { margin-top: 3px; padding-top: 5px; border-top: 1px solid var(--row-border); font-weight: 700; }
 .investment-evolution-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .investment-evolution-chart { min-width: 0; padding: 15px; }
 .investment-evolution-chart header h2 { margin: 0; color: var(--text); font-size: 15px; }
