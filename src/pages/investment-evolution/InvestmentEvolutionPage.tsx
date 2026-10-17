@@ -12,10 +12,10 @@ const monthLabel = (value: string) => formatMonthShort(value);
 const fullMonthLabel = (value: string) => formatMonthYear(value);
 
 export function InvestmentEvolutionPage() {
-  const initialYear = String(currentYear);
-  const [year, setYear] = useState(initialYear);
-  const [fromMonth, setFromMonth] = useState(`${initialYear}-01`);
-  const [toMonth, setToMonth] = useState(`${initialYear}-12`);
+  const initialMonth = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const [fromMonth, setFromMonth] = useState(`${currentYear}-01`);
+  const [toMonth, setToMonth] = useState(initialMonth);
+  const [allTime, setAllTime] = useState(false);
   const [accountId, setAccountId] = useState("");
   const [applicationId, setApplicationId] = useState("");
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
@@ -43,7 +43,7 @@ export function InvestmentEvolutionPage() {
   }, []);
 
   const filteredApplications = useMemo(() => applications.filter((app) => !accountId || app.accountId === accountId), [applications, accountId]);
-  const filters = useMemo(() => ({ fromMonth, toMonth, accountId: accountId || undefined, applicationId: applicationId || undefined }), [fromMonth, toMonth, accountId, applicationId]);
+  const filters = useMemo(() => ({ fromMonth: allTime ? undefined : fromMonth, toMonth: allTime ? undefined : toMonth, allTime: allTime || undefined, accountId: accountId || undefined, applicationId: applicationId || undefined }), [fromMonth, toMonth, allTime, accountId, applicationId]);
 
   useEffect(() => {
     let active = true;
@@ -61,18 +61,11 @@ export function InvestmentEvolutionPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [fromMonth, toMonth, accountId, applicationId]);
+  }, [fromMonth, toMonth, allTime, accountId, applicationId]);
 
   function changeFromMonth(value: string) { setLoading(true); setFromMonth(value); if (value > toMonth) setToMonth(value); }
 
   function changeToMonth(value: string) { setLoading(true); setToMonth(value); if (value < fromMonth) setFromMonth(value); }
-
-  function changeYear(value: string) {
-    setLoading(true);
-    setYear(value);
-    setFromMonth(`${value}-01`);
-    setToMonth(`${value}-12`);
-  }
 
   function exportCsv() {
     const header = ["Mês", "Aportes", "Resgates", "Devoluções", "Rendimentos", "Saldo final"];
@@ -83,7 +76,7 @@ export function InvestmentEvolutionPage() {
     const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `evolucao-investimentos-${fromMonth}-${toMonth}.csv`;
+    anchor.download = `evolucao-investimentos-${allTime ? "todo-periodo" : `${fromMonth}-${toMonth}`}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -94,9 +87,9 @@ export function InvestmentEvolutionPage() {
   return (
     <main className="page-content investment-evolution-page">
       <div className="investment-evolution-toolbar">
-        <label>Ano<SelectField ariaLabel="Ano" value={year} onValueChange={changeYear} options={Array.from({ length: 8 }, (_, index) => String(currentYear - 5 + index)).map((value) => ({ value, label: value }))} /></label>
-        <label>De<MonthNavigator ariaLabel="Mês inicial" value={fromMonth} min={`${year}-01`} max={`${year}-12`} onChange={changeFromMonth} /></label>
-        <label>Até<MonthNavigator ariaLabel="Mês final" value={toMonth} min={`${year}-01`} max={`${year}-12`} onChange={changeToMonth} /></label>
+        <label className="investment-evolution-period-toggle"><input type="checkbox" checked={allTime} onChange={(event) => { setLoading(true); setAllTime(event.target.checked); }} /><span>Todo o período</span></label>
+        <label>De<MonthNavigator ariaLabel="Mês e ano inicial" value={fromMonth} disabled={allTime} onChange={changeFromMonth} /></label>
+        <label>Até<MonthNavigator ariaLabel="Mês e ano final" value={toMonth} disabled={allTime} onChange={changeToMonth} /></label>
         <label>Conta<SelectField ariaLabel="Conta de investimento" value={accountId} onValueChange={(value) => { setLoading(true); setAccountId(value); setApplicationId(""); }} options={[{ value: '', label: 'Todas as contas' }, ...accounts.filter((account) => account.type === "investment").map((account) => ({ value: account.id, label: account.name }))]} /></label>
         <label>Aplicação<SelectField ariaLabel="Aplicação" value={applicationId} onValueChange={(value) => { setLoading(true); setApplicationId(value); }} options={[{ value: '', label: 'Todas as aplicações' }, ...filteredApplications.map((app) => ({ value: app.id, label: app.name }))]} /></label>
         <button className="secondary-button" onClick={exportCsv} disabled={!rows.length}>Exportar CSV</button>

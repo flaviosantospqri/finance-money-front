@@ -16,9 +16,9 @@ async function request<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-function query(values: Record<string, string | undefined>) {
+function query(values: Record<string, string | boolean | undefined>) {
   const params = new URLSearchParams();
-  Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
+  Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, String(value)); });
   return params.toString();
 }
 
@@ -43,8 +43,9 @@ export type InvestmentEvolutionSummary = {
 };
 
 export type EvolutionFilters = {
-  fromMonth: string;
-  toMonth: string;
+  fromMonth?: string;
+  toMonth?: string;
+  allTime?: boolean;
   accountId?: string;
   applicationId?: string;
 };

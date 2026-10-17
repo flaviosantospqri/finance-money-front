@@ -447,6 +447,8 @@ button { color: inherit; }
 .category-level-options button small { color: var(--text-soft); font-size: 11px; line-height: 1.4; }
 .investment-evolution-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 12px; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); }
 .investment-evolution-toolbar label { display: grid; gap: 5px; color: var(--text-soft); font-size: 12px; font-weight: 600; }
+.investment-evolution-toolbar .investment-evolution-period-toggle { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--panel-border); border-radius: 7px; color: var(--text); background: var(--surface); cursor: pointer; }
+.investment-evolution-period-toggle input { width: 15px; height: 15px; margin: 0; accent-color: var(--green); }
 .investment-evolution-toolbar select { min-width: 128px; height: 36px; padding: 0 9px; border: 1px solid var(--panel-border); border-radius: 7px; color: var(--text); background: var(--surface); font: inherit; }
 .investment-evolution-toolbar .secondary-button { min-height: 36px; margin-left: auto; }
 .investment-evolution-summary .cash-book-summary-card > span { color: var(--text-soft); font-size: 13px; }
