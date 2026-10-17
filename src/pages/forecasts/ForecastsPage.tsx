@@ -4,6 +4,7 @@ import { Icon } from '../../components/ui/Icon';
 import { SelectField } from '../../components/ui/SelectField';
 import { DeleteForecastDialog } from '../../components/forecasts/DeleteForecastDialog';
 import { ForecastGroupDialog } from '../../components/forecasts/ForecastGroupDialog';
+import { ForecastBuiltinTabDialog } from '../../components/forecasts/ForecastBuiltinTabDialog';
 import { ForecastDetail } from '../../components/forecasts/ForecastDetail';
 import { ForecastForm } from '../../components/forecasts/ForecastForm';
 import { ForecastTable } from '../../components/forecasts/ForecastTable';
@@ -74,6 +75,8 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [status, setStatus] = usePersistentState('fllatech-money-forecasts-status', ''),
     [view, setView] = usePersistentState<'expense' | 'income' | 'all' | `group:${string}`>('fllatech-money-forecasts-view', 'expense');
   const [tabOrder, setTabOrder] = usePersistentState<string[]>('fllatech-money-forecasts-tab-order', []);
+  const [builtinTabNames, setBuiltinTabNames] = usePersistentState<Record<string, string>>('fllatech-money-forecasts-tab-names', {});
+  const [editingBuiltinTab, setEditingBuiltinTab] = useState<'expense' | 'income' | 'all' | null>(null);
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -325,9 +328,11 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     if (view.startsWith('group:')) return item.kind === 'expense' && item.groupId === view.slice(6);
     return item.kind === 'expense' && !item.groupId;
   });
+  const defaultTabNames = { expense: 'Contas a pagar', income: 'Recebimentos', all: 'Todas' };
+  const tabName = (key: keyof typeof defaultTabNames) => builtinTabNames[key]?.trim() || defaultTabNames[key];
   const currentTabName = view.startsWith('group:')
     ? groups.find((group) => group.id === view.slice(6))?.name ?? 'Contas a pagar'
-    : view === 'income' ? 'Recebimentos' : view === 'all' ? 'Todas' : 'Contas a pagar';
+    : tabName(view === 'income' ? 'income' : view === 'all' ? 'all' : 'expense');
   const totalFields = [
     { key: 'amount' as const, label: 'Previsto' },
     { key: 'realized' as const, label: 'Realizado' },
@@ -421,9 +426,19 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
             onDragEnd: () => setDraggedTab(null),
             title: 'Arraste para reordenar',
           };
-          if (tab.key === 'expense') return <button key={tab.key} {...common} className={`${view === 'expense' ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`} onClick={() => setView('expense')}>Contas a pagar <span>{items.filter((item) => item.kind === 'expense' && item.status !== 'cancelled' && !item.groupId).length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'expense' && !item.groupId), 'amount'))}</span></button>;
-          if (tab.key === 'income') return <button key={tab.key} {...common} className={`${view === 'income' ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`} onClick={() => setView('income')}>Recebimentos <span>{items.filter((item) => item.kind === 'income' && item.status !== 'cancelled').length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'income'), 'amount'))}</span></button>;
-          if (tab.key === 'all') return <button key={tab.key} {...common} className={`${view === 'all' ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`} onClick={() => setView('all')}>Todas<span className="forecast-tab-amount" title="Saldo previsto líquido: receitas menos despesas">{formatCurrencyDecimal(sumForecastNet(activeRows, 'amount'))}</span></button>;
+          if (tab.key === 'expense' || tab.key === 'income' || tab.key === 'all') {
+            const tabKey = tab.key;
+            const label = tabName(tabKey);
+            const amount = tabKey === 'expense'
+              ? sumForecastField(activeRows.filter((item) => item.kind === 'expense' && !item.groupId), 'amount')
+              : tabKey === 'income'
+                ? sumForecastField(activeRows.filter((item) => item.kind === 'income'), 'amount')
+                : sumForecastNet(activeRows, 'amount');
+            const count = tabKey === 'expense'
+              ? items.filter((item) => item.kind === 'expense' && item.status !== 'cancelled' && !item.groupId).length
+              : tabKey === 'income' ? items.filter((item) => item.kind === 'income' && item.status !== 'cancelled').length : null;
+            return <div key={tab.key} {...common} className={`forecast-view-tab-item ${view === tabKey ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`}><button className={view === tabKey ? 'active' : ''} onClick={() => setView(tabKey)}>{label}{count !== null && <span>{count}</span>}<span className="forecast-tab-amount" title={tabKey === 'all' ? 'Saldo previsto líquido: receitas menos despesas' : undefined}>{formatCurrencyDecimal(amount)}</span></button><button className="forecast-tab-action" type="button" aria-label={`Editar aba ${label}`} title={`Editar ${label}`} onClick={() => setEditingBuiltinTab(tabKey)}><Icon name="edit" size={13} /></button></div>;
+          }
           if (!('group' in tab)) return null;
           const group = tab.group;
           const groupRows = activeRows.filter((item) => item.kind === 'expense' && item.groupId === group.id);
@@ -483,7 +498,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           )}
           {(view === 'expense' || view.startsWith('group:')) && (
             <ForecastTable
-              title={view.startsWith('group:') ? groups.find((group) => `group:${group.id}` === view)?.name ?? 'Contas a pagar' : 'Contas a pagar'}
+              title={view.startsWith('group:') ? groups.find((group) => `group:${group.id}` === view)?.name ?? tabName('expense') : tabName('expense')}
               description={view.startsWith('group:') ? 'Despesas organizadas nesta aba.' : 'Compromissos previstos e pagamentos já conciliados.'}
               items={items.filter((item) => item.kind === 'expense' && (view.startsWith('group:') ? item.groupId === view.slice(6) : !item.groupId))}
               distribution={distribution}
@@ -568,6 +583,18 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           onClose={() => setGroupDialog(false)}
           onSave={saveGroup}
           onDelete={groupDialog ? deleteGroup : undefined}
+        />
+      )}
+      {editingBuiltinTab && (
+        <ForecastBuiltinTabDialog
+          title={tabName(editingBuiltinTab)}
+          initialName={tabName(editingBuiltinTab)}
+          onClose={() => setEditingBuiltinTab(null)}
+          onSave={(name) => {
+            setBuiltinTabNames((current) => ({ ...current, [editingBuiltinTab]: name }));
+            setEditingBuiltinTab(null);
+            toast.success('Nome da aba atualizado.');
+          }}
         />
       )}
     </main>
