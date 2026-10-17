@@ -5,7 +5,7 @@ import { Icon } from "../ui/Icon";
 import { SelectField } from "../ui/SelectField";
 
 export type InvestmentMovementDraft = {
-  type: "contribution" | "withdrawal" | "income" | "adjustment";
+  type: "contribution" | "withdrawal" | "refund" | "income" | "adjustment";
   amount: string;
   occurredAt: string;
   origin: string;
@@ -30,13 +30,15 @@ export function InvestmentMovementDialog({
   onChange,
 }: Props) {
   const isFlow =
-    draft.type === "contribution" || draft.type === "withdrawal";
+    draft.type === "contribution" || draft.type === "withdrawal" || draft.type === "refund";
   const title = editing
     ? "Editar movimentação"
     : draft.type === "contribution"
       ? "Novo aporte"
       : draft.type === "withdrawal"
         ? "Novo resgate"
+        : draft.type === "refund"
+          ? "Nova devolução"
         : "Nova movimentação";
 
   return (
@@ -75,7 +77,7 @@ export function InvestmentMovementDialog({
           <fieldset disabled={saving}>
             <label className="form-field">
               <span>Tipo</span>
-              <SelectField ariaLabel="Tipo de movimentação" value={draft.type} disabled={Boolean(editing)} onValueChange={(value) => onChange({ ...draft, type: value as InvestmentMovementDraft['type'] })} options={[{ value: 'contribution', label: 'Aporte' }, { value: 'withdrawal', label: 'Resgate' }, { value: 'income', label: 'Rendimento' }, { value: 'adjustment', label: 'Ajuste justificado' }]} />
+              <SelectField ariaLabel="Tipo de movimentação" value={draft.type} disabled={Boolean(editing)} onValueChange={(value) => onChange({ ...draft, type: value as InvestmentMovementDraft['type'] })} options={[{ value: 'contribution', label: 'Aporte' }, { value: 'withdrawal', label: 'Resgate' }, { value: 'refund', label: 'Devolução' }, { value: 'income', label: 'Rendimento' }, { value: 'adjustment', label: 'Ajuste justificado' }]} />
             </label>
             <label className="form-field">
               <span>Data da movimentação</span>

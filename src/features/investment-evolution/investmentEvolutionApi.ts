@@ -26,6 +26,7 @@ export type MonthlyInvestmentEvolution = {
   month: string;
   contributions: string;
   withdrawals: string;
+  refunds: string;
   income: string;
   endingBalance: string;
 };
@@ -36,6 +37,7 @@ export type InvestmentEvolutionSummary = {
   openingBalance: string;
   endingBalance: string;
   contributions: string;
+  refunds: string;
   income: string;
   variation: string;
 };

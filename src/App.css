@@ -374,7 +374,7 @@ button { color: inherit; }
 .cash-book-request-status { display: inline-flex; align-items: center; gap: 8px; color: var(--text-soft); font-size: 11px; white-space: nowrap; }
 .cash-book-request-status .loading-spinner { width: 14px; height: 14px; flex: 0 0 14px; }
 .cash-book-reorder-hint { color: var(--text-soft); font-size: 11px; white-space: nowrap; }
-.cash-book-table th:first-child { padding-left: 44px !important; }
+.cash-book-table:not(.forecasts-table):not(.investments-table):not(.investment-evolution-table):not(.investment-applications-table) th:first-child { padding-left: 44px !important; }
 .cash-book-table td.cash-book-date-with-handle { position: relative; display: table-cell; padding-left: 44px !important; }
 .cash-book-drag-handle, .cash-book-drag-spacer { position: absolute; left: 27px; top: 50%; display: inline-flex; width: 16px; align-items: center; justify-content: center; transform: translateY(-50%); }
 .cash-book-drag-handle { height: 28px; padding: 0; border: 0; border-radius: 5px; color: var(--text-soft); background: transparent; cursor: grab; font-size: 18px; line-height: 1; touch-action: none; }
@@ -481,11 +481,10 @@ button { color: inherit; }
 .investment-list-controls { display: flex; align-items: center; gap: 12px; }
 .investment-opening-balance strong { color: var(--text); font-variant-numeric: tabular-nums; }
 .investment-applications-table { min-width: 860px; }
-.investment-applications-table th:nth-child(1) { width: 24%; }
-.investment-applications-table th:nth-child(2) { width: 24%; }
-.investment-applications-table th:nth-child(3) { width: 15%; }
+.investment-applications-table th:nth-child(1) { width: 48%; }
+.investment-applications-table th:nth-child(2) { width: 20%; }
+.investment-applications-table th:nth-child(3) { width: 16%; }
 .investment-applications-table th:nth-child(4) { width: 16%; }
-.investment-applications-table th:nth-child(5) { width: 11%; }
 .investment-open-link { display: inline-flex; align-items: center; gap: 9px; padding: 0; border: 0; color: var(--text); background: transparent; cursor: pointer; font: inherit; text-align: left; }
 .investment-open-link:hover strong { color: var(--green); }
 .investment-open-link .investment-app-icon { width: 30px; height: 30px; flex-basis: 30px; }
@@ -537,7 +536,7 @@ button { color: inherit; }
 .investments-table td:nth-child(2) small { margin-top: 3px; color: var(--text-soft); font-size: 11px; }
 .investment-type-chip { display: inline-flex; padding: 5px 8px; border-radius: 6px; color: var(--text-soft); background: var(--surface-muted); font-size: 12px; font-weight: 600; }
 .investment-type-chip.contribution, .investment-type-chip.income { color: var(--green); background: var(--green-soft); }
-.investment-type-chip.withdrawal { color: var(--red); background: var(--red-soft); }
+.investment-type-chip.withdrawal, .investment-type-chip.refund { color: var(--red); background: var(--red-soft); }
 .investment-type-chip.adjustment { color: var(--amber); background: var(--amber-soft); }
 .theme-dark .investment-type-chip.adjustment { background: var(--amber-dark-soft); }
 .investment-form-hint { margin: 10px 18px 0; padding: 9px 10px; border: 1px solid var(--panel-border); border-radius: 7px; color: var(--text-soft); background: var(--surface-muted); font-size: 12px; line-height: 1.45; }
@@ -944,3 +943,15 @@ button { color: inherit; }
   .investment-detail-notes { margin-left: 0; }
   .investment-detail-heading .investment-opening-balance { white-space: normal; }
 }
+
+/* Keep table labels and their cell contents aligned with the app typography. */
+.app-root .page-content table.transactions-table th,
+.app-root .page-content table.transactions-table td,
+.app-root .page-content table.forecast-overall-table th,
+.app-root .page-content table.forecast-overall-table td { text-align: left !important; }
+.app-root .page-content table.transactions-table th,
+.app-root .page-content table.forecast-overall-table thead th { font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: normal; text-transform: none; }
+.app-root .page-content .empty-table { text-align: center !important; }
+.app-root .page-content .row-actions,
+.app-root .page-content .forecast-row-actions,
+.app-root .page-content .repasse-actions { justify-content: flex-start; padding-right: 0 !important; }

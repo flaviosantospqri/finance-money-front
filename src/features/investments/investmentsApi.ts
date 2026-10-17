@@ -48,7 +48,7 @@ export type InvestmentApplication = {
 export type InvestmentMovement = {
   id: string;
   occurredAt: string;
-  type: "contribution" | "withdrawal" | "income" | "adjustment";
+  type: "contribution" | "withdrawal" | "refund" | "income" | "adjustment";
   amount: string;
   origin: string | null;
   notes: string | null;
@@ -59,6 +59,7 @@ export type InvestmentSummary = {
   investedBalance: string;
   contributions: string;
   withdrawals: string;
+  refunds: string;
   income: string;
   month: string;
   asOf: string;
@@ -102,7 +103,7 @@ export const investmentsApi = {
     id: string,
     input: {
       occurredAt: string;
-      type: "contribution" | "withdrawal" | "income" | "adjustment";
+      type: "contribution" | "withdrawal" | "refund" | "income" | "adjustment";
       amount: string;
       origin?: string;
       notes?: string;
@@ -116,7 +117,7 @@ export const investmentsApi = {
     id: string,
     input: {
       occurredAt: string;
-      type: "contribution" | "withdrawal" | "income" | "adjustment";
+      type: "contribution" | "withdrawal" | "refund" | "income" | "adjustment";
       amount: string;
       origin?: string;
       notes?: string;
