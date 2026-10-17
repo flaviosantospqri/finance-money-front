@@ -226,65 +226,64 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       </section>
 
       {error && !modalOpen && <div className="cash-book-error" role="alert">{error}</div>}
-      <section className="panel repasses-distribution">
-        <header className="cash-book-table-heading repasses-distribution-heading">
-          <div><h2>Distribuição da competência</h2><p>{distributionUsesGlobalRules ? 'Salvar aqui atualiza as regras globais a partir desta competência. Os meses anteriores ficam preservados.' : 'Esta competência passada aceita um ajuste histórico, sem alterar as regras globais atuais.'}</p></div>
-          <MonthNavigator value={month} onChange={onMonthChange} ariaLabel="Competência da distribuição" />
+      <section className="panel repasses-list repasses-unified-list">
+        <header className="cash-book-table-heading repasses-rules-heading">
+          <div><h2>Distribuição mensal</h2><p>{distributionUsesGlobalRules ? 'Salvar atualiza as regras a partir deste mês; competências anteriores ficam preservadas.' : 'Este mês permite um ajuste histórico sem alterar as regras atuais.'}</p></div>
+          <label className="repasses-month-control"><span>Competência</span><MonthNavigator value={month} onChange={onMonthChange} ariaLabel="Competência da distribuição" /></label>
         </header>
-        {distributionLoading ? <div className="repasses-empty"><span className="loading-spinner" /> Carregando distribuição…</div> : distribution.length === 0 ? <div className="repasses-empty">Não há destinações para esta competência. Cadastre uma regra de repasse para começar.</div> : (
-          <>
-            <div className="distribution-grid repasses-distribution-grid">
-              {distribution.map((row) => (
-                <div key={row.id} className={`distribution-card${flexibleDestinationId === row.id ? ' is-flexible' : ''}`}>
-                  <span>{row.name}</span>
-                  <div>
-                    <SelectField ariaLabel={`Tipo de repasse para ${row.name}`} value={row.valueType} disabled={distributionSaving} onValueChange={(value) => changeDistributionType(row.id, value as Distribution['valueType'])} options={[{ value: 'percentage', label: '%' }, { value: 'fixed', label: 'R$' }]} />
-                    <input aria-label={`Valor do repasse para ${row.name}`} type={row.valueType === 'percentage' ? 'text' : 'number'} inputMode={row.valueType === 'percentage' ? 'decimal' : undefined} min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.valueType === 'percentage' ? row.value.replace('.', ',') : row.value} disabled={distributionSaving || (row.valueType === 'percentage' && flexibleDestinationId === row.id)} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} onBlur={(event) => {
-                      if (row.valueType !== 'percentage' || flexibleDestinationId === row.id) return;
-                      const value = normalizedPercentage(event.target.value);
-                      setDistribution((current) => refreshFlexibleRow(
-                        current.map((item) => item.id === row.id ? { ...item, value, percentage: value } : item),
-                        flexibleDestinationId,
-                      ));
-                    }} />
-                    <span>{row.valueType === 'percentage' ? '%' : 'R$'}</span>
-                  </div>
-                  {row.valueType === 'percentage' && <button type="button" className={`distribution-pin-button${flexibleDestinationId === row.id ? ' is-unpinned' : ''}`} aria-label={flexibleDestinationId === row.id ? `Fixar valor de ${row.name}` : `Desafixar ${row.name}; será o único percentual ajustado`} aria-pressed={flexibleDestinationId !== row.id} onClick={() => toggleFlexibleDestination(row.id)} disabled={distributionSaving} title={flexibleDestinationId === row.id ? 'Fixar este percentual' : 'Desafixar: este será o único percentual ajustado'}><Icon name={flexibleDestinationId === row.id ? 'unlock' : 'lock'} size={13} />{flexibleDestinationId === row.id ? 'Fixar valor' : 'Desafixar valor'}</button>}
-                  <small>Orçamento {formatCurrencyDecimal(row.budget)} · Consumido {formatCurrencyDecimal(row.consumed)}</small>
-                </div>
-              ))}
-            </div>
-            <footer className="repasses-distribution-footer">
-              <div className="distribution-total-status"><strong className={distributionIsValid ? '' : 'is-invalid'}>Total percentual: {percentText(percentageTotal)}%</strong><small>{flexibleDestinationId ? `${distribution.find((row) => row.id === flexibleDestinationId)?.name} ajusta para fechar o total.` : 'Todos os valores estão fixos.'}</small></div>
-              <div><button className="secondary-button" onClick={() => void copyDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>Copiar para o próximo mês</button><button className="primary-button" onClick={() => void saveDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>{distributionSaving ? 'Salvando…' : 'Salvar distribuição'}</button></div>
-            </footer>
-          </>
+        {distributionLoading || loading ? <div className="repasses-empty"><span className="loading-spinner" /> Carregando distribuição…</div> : distribution.length === 0 ? <div className="repasses-empty">Não há destinações para esta competência. Cadastre uma regra para começar.</div> : (
+          <div className="table-scroll">
+            <table className="transactions-table repasses-table repasses-unified-table">
+              <thead><tr>
+                <th>Competência</th><th>Destinação</th><th>Percentual / valor</th><th>Orçamento</th><th>Consumido</th><th>Vigência global</th><th>Situação</th><th>Ações</th>
+              </tr></thead>
+              <tbody>{distribution.map((row) => {
+                const rule = rows.find((item) => item.destinationId === row.id && item.effectiveFrom <= month && (!item.effectiveTo || item.effectiveTo >= month));
+                const historicalRule = rule ? isHistorical(rule) : false;
+                return <tr key={row.id}>
+                  <td>{formatPeriod(month)}</td>
+                  <td><strong>{row.name}</strong></td>
+                  <td>
+                    <div className={`repasses-inline-value${flexibleDestinationId === row.id ? ' is-flexible' : ''}`}>
+                      <SelectField ariaLabel={`Tipo de repasse para ${row.name}`} value={row.valueType} disabled={distributionSaving} onValueChange={(value) => changeDistributionType(row.id, value as Distribution['valueType'])} options={[{ value: 'percentage', label: '%' }, { value: 'fixed', label: 'R$' }]} />
+                      <input aria-label={`Valor do repasse para ${row.name}`} type={row.valueType === 'percentage' ? 'text' : 'number'} inputMode={row.valueType === 'percentage' ? 'decimal' : undefined} min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.valueType === 'percentage' ? row.value.replace('.', ',') : row.value} disabled={distributionSaving || (row.valueType === 'percentage' && flexibleDestinationId === row.id)} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} onBlur={(event) => {
+                        if (row.valueType !== 'percentage' || flexibleDestinationId === row.id) return;
+                        const value = normalizedPercentage(event.target.value);
+                        setDistribution((current) => refreshFlexibleRow(current.map((item) => item.id === row.id ? { ...item, value, percentage: value } : item), flexibleDestinationId));
+                      }} />
+                      <span>{row.valueType === 'percentage' ? '%' : 'R$'}</span>
+                      {row.valueType === 'percentage' && <button type="button" className={`distribution-pin-button${flexibleDestinationId === row.id ? ' is-unpinned' : ''}`} aria-label={flexibleDestinationId === row.id ? `Fixar valor de ${row.name}` : `Desafixar ${row.name}; será o único percentual ajustado`} aria-pressed={flexibleDestinationId !== row.id} onClick={() => toggleFlexibleDestination(row.id)} disabled={distributionSaving} title={flexibleDestinationId === row.id ? 'Fixar este percentual' : 'Desafixar: este será o único percentual ajustado'}><Icon name={flexibleDestinationId === row.id ? 'unlock' : 'lock'} size={13} /></button>}
+                    </div>
+                  </td>
+                  <td className="repasses-money-cell">{formatCurrencyDecimal(row.budget)}</td>
+                  <td className="repasses-money-cell">{formatCurrencyDecimal(row.consumed)}</td>
+                  <td>{rule ? `${formatPeriod(rule.effectiveFrom)} – ${rule.effectiveTo ? formatPeriod(rule.effectiveTo) : 'Em diante'}` : 'Sem regra global'}</td>
+                  <td><span className={`repasse-state ${historicalRule ? 'historical' : rule ? 'current' : 'future'}`}>{historicalRule ? 'Histórico' : rule ? 'Vigente' : 'Sem regra'}</span></td>
+                  <td><div className="repasse-actions">
+                    <button className="icon-button" aria-label={`Editar regra de ${row.name}`} title={historicalRule ? 'Regra histórica protegida' : 'Editar vigência'} disabled={!rule || historicalRule} onClick={() => rule && startEdit(rule)}><Icon name="edit" size={15} /></button>
+                    <button className="icon-button danger-icon" aria-label={`Remover regra de ${row.name}`} title={historicalRule ? 'Regra histórica protegida' : 'Remover vigência'} disabled={!rule || historicalRule} onClick={() => rule && setPendingDelete(rule)}><Icon name="trash" size={15} /></button>
+                  </div></td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </div>
         )}
-      </section>
-
-      <section className="panel repasses-list">
-        <header className="cash-book-table-heading repasses-rules-heading"><div><h2>Regras globais</h2><p>Salvar uma distribuição atual ou futura atualiza estas regras a partir da competência escolhida; o histórico anterior fica preservado.</p></div></header>
-        {loading ? <div className="repasses-empty">Carregando regras…</div> : rows.length === 0 ? <div className="repasses-empty">Nenhuma regra cadastrada. Crie um repasse para adicionar uma destinação personalizada.</div> : (
-          <div className="table-scroll"><table className="transactions-table repasses-table"><thead><tr><th>Destinação</th><th>Valor</th><th>Início da vigência</th><th>Fim da vigência</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+        {!distributionLoading && distribution.length > 0 && <footer className="repasses-unified-footer">
+          <div className="distribution-total-status"><strong className={distributionIsValid ? '' : 'is-invalid'}>Total percentual: {percentText(percentageTotal)}%</strong><small>{flexibleDestinationId ? `${distribution.find((row) => row.id === flexibleDestinationId)?.name} ajusta para fechar o total.` : 'Todos os valores estão fixos.'}</small></div>
+          <div><button className="secondary-button" onClick={() => void copyDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>Copiar para o próximo mês</button><button className="primary-button" onClick={() => void saveDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>{distributionSaving ? 'Salvando…' : 'Salvar distribuição'}</button></div>
+        </footer>}
+        <details className="repasses-all-rules">
+          <summary>Ver todas as regras e vigências</summary>
+          {rows.length === 0 ? <div className="repasses-empty">Nenhuma regra cadastrada.</div> : <div className="table-scroll"><table className="transactions-table repasses-table"><thead><tr><th>Destinação</th><th>Valor</th><th>Início da vigência</th><th>Fim da vigência</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
             {rows.map((row) => {
               const historical = isHistorical(row);
               const activePeriod = currentPeriod();
               const current = row.effectiveFrom <= activePeriod && (!row.effectiveTo || row.effectiveTo >= activePeriod);
-              return <tr key={row.id}>
-                <td><strong>{row.name}</strong></td>
-                <td>{displayValue(row)}</td>
-                <td>{formatPeriod(row.effectiveFrom)}</td>
-                <td>{row.effectiveTo ? formatPeriod(row.effectiveTo) : 'Até nova alteração'}</td>
-                <td><span className={`repasse-state ${historical ? 'historical' : current ? 'current' : 'future'}`}>{historical ? 'Histórico protegido' : current ? 'Vigente' : 'Futuro'}</span></td>
-                <td><div className="repasse-actions">
-                  <button className="icon-button" aria-label={`Editar ${row.name}`} title={historical ? 'Ajuste o histórico na competência' : 'Editar vigência'} disabled={historical} onClick={() => startEdit(row)}><Icon name="edit" size={15} /></button>
-                  <button className="icon-button danger-icon" aria-label={`Remover ${row.name}`} title={historical ? 'O histórico é alterado pela competência' : 'Remover vigência futura'} disabled={historical} onClick={() => setPendingDelete(row)}><Icon name="trash" size={15} /></button>
-                </div></td>
-              </tr>;
+              return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{displayValue(row)}</td><td>{formatPeriod(row.effectiveFrom)}</td><td>{row.effectiveTo ? formatPeriod(row.effectiveTo) : 'Até nova alteração'}</td><td><span className={`repasse-state ${historical ? 'historical' : current ? 'current' : 'future'}`}>{historical ? 'Histórico protegido' : current ? 'Vigente' : 'Futuro'}</span></td><td><div className="repasse-actions"><button className="icon-button" aria-label={`Editar ${row.name}`} title={historical ? 'Ajuste o histórico na competência' : 'Editar vigência'} disabled={historical} onClick={() => startEdit(row)}><Icon name="edit" size={15} /></button><button className="icon-button danger-icon" aria-label={`Remover ${row.name}`} title={historical ? 'O histórico é alterado pela competência' : 'Remover vigência futura'} disabled={historical} onClick={() => setPendingDelete(row)}><Icon name="trash" size={15} /></button></div></td></tr>;
             })}
-          </tbody></table></div>
-        )}
-        <p className="repasses-history-note">A tabela e os cartões compartilham as regras da competência atual ou futura. Competências anteriores podem receber ajustes sem alterar as regras atuais.</p>
+          </tbody></table></div>}
+          <p className="repasses-history-note">Competências anteriores permanecem preservadas.</p>
+        </details>
       </section>
 
       {modalOpen && (

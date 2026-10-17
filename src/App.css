@@ -717,8 +717,32 @@ button { color: inherit; }
 .repasses-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr); align-items: start; gap: 14px; }
 .repasses-list, .repasses-form-panel { min-width: 0; }
 .repasses-table { min-width: 720px; }
+.repasses-unified-list { overflow: visible; }
+.repasses-unified-list > .repasses-rules-heading { align-items: center; justify-content: space-between; }
+.repasses-month-control { display: grid; gap: 4px; color: var(--text-soft); font-size: 11px; font-weight: 600; }
+.repasses-unified-table { min-width: 1320px; }
+.repasses-unified-table th:nth-child(1), .repasses-unified-table td:nth-child(1) { width: 13%; }
+.repasses-unified-table th:nth-child(2), .repasses-unified-table td:nth-child(2) { width: 18%; text-align: left; }
+.repasses-unified-table th:nth-child(3), .repasses-unified-table td:nth-child(3) { width: 20%; text-align: left; }
+.repasses-unified-table th:nth-child(4), .repasses-unified-table th:nth-child(5), .repasses-unified-table td:nth-child(4), .repasses-unified-table td:nth-child(5) { width: 12%; text-align: right; font-variant-numeric: tabular-nums; }
+.repasses-unified-table th:nth-child(6), .repasses-unified-table td:nth-child(6) { width: 17%; text-align: left; white-space: normal; }
+.repasses-unified-table th:nth-child(7), .repasses-unified-table td:nth-child(7), .repasses-unified-table th:nth-child(8), .repasses-unified-table td:nth-child(8) { text-align: center; }
+.repasses-inline-value { display: flex; align-items: center; gap: 6px; }
+.repasses-inline-value .select-field-trigger { width: 54px; min-height: 34px; padding-inline: 7px; }
+.repasses-inline-value input { width: 98px; min-width: 0; min-height: 34px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; color: var(--text); background: var(--surface); font: inherit; font-size: 12px; }
+.repasses-inline-value input:disabled { color: var(--text-soft); background: var(--surface-muted); cursor: not-allowed; }
+.repasses-inline-value > span { color: var(--text-soft); font-size: 12px; }
+.repasses-inline-value .distribution-pin-button { width: 30px; min-width: 30px; height: 29px; min-height: 29px; justify-content: center; padding: 3px; }
+.repasses-unified-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 15px; }
+.repasses-unified-footer > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.repasses-all-rules { border-top: 1px solid var(--row-border); }
+.repasses-all-rules summary { padding: 12px 16px; color: var(--text-soft); cursor: pointer; font-size: 12px; font-weight: 600; }
+.repasses-all-rules[open] summary { border-bottom: 1px solid var(--row-border); }
+.repasses-all-rules .repasses-history-note { padding-bottom: 4px; }
 .repasses-table th:nth-child(2), .repasses-table td:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; }
 .repasses-table th:nth-child(3), .repasses-table th:nth-child(4), .repasses-table th:nth-child(5), .repasses-table th:nth-child(6), .repasses-table td:nth-child(3), .repasses-table td:nth-child(4), .repasses-table td:nth-child(5), .repasses-table td:nth-child(6) { text-align: center; }
+.repasses-unified-table.repasses-table th:nth-child(2), .repasses-unified-table.repasses-table td:nth-child(2), .repasses-unified-table.repasses-table th:nth-child(3), .repasses-unified-table.repasses-table td:nth-child(3), .repasses-unified-table.repasses-table th:nth-child(6), .repasses-unified-table.repasses-table td:nth-child(6) { text-align: left; }
+.repasses-unified-table.repasses-table th:nth-child(4), .repasses-unified-table.repasses-table th:nth-child(5), .repasses-unified-table.repasses-table td:nth-child(4), .repasses-unified-table.repasses-table td:nth-child(5) { text-align: right; }
 .repasse-state { display: inline-flex; padding: 4px 8px; border-radius: 99px; color: var(--text-soft); background: var(--surface-muted); font-size: 11px; font-weight: 650; white-space: nowrap; }
 .repasse-state.current { color: var(--green); background: var(--green-soft); }
 .repasse-state.future { color: var(--text-soft); background: var(--surface-muted); }
