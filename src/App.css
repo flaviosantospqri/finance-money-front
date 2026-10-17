@@ -645,7 +645,8 @@ button { color: inherit; }
 .forecast-detail-body textarea { min-height: 75px; resize: vertical; }
 .forecast-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px; border: 1px solid var(--border); border-radius: 8px; }
 .forecast-link small { display: block; margin-top: 4px; color: var(--text-soft); }
-.forecast-view-tabs { display: flex; gap: 6px; padding: 4px; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); }
+.forecast-view-tabs { display: flex; min-width: 0; gap: 6px; padding: 4px; overflow-x: auto; overscroll-behavior-x: contain; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); scrollbar-width: thin; }
+.forecast-view-tabs > button, .forecast-view-tabs .forecast-view-tab-item { flex: 0 0 auto; white-space: nowrap; }
 .forecast-view-tabs button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 7px; color: var(--text-soft); background: transparent; cursor: pointer; font-weight: 600; }
 .forecast-view-tabs button.active { color: var(--text); background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border); }
 .forecast-view-tabs > button[draggable="true"], .forecast-view-tab-item[draggable="true"] { cursor: grab; }
@@ -813,7 +814,6 @@ button { color: inherit; }
   .investment-evolution-chart-area { height: 230px; }
   .investment-evolution-history .cash-book-table-heading { align-items: flex-start; gap: 8px; }
   .investment-evolution-history-actions { width: 100%; flex-wrap: wrap; justify-content: space-between; }
-  .forecast-view-tabs { overflow-x: auto; }
   .forecast-view-tabs button { white-space: nowrap; }
   .forecast-tab-totals { grid-template-columns: 1fr; }
   .distribution-actions { flex-wrap: wrap; justify-content: flex-end; }

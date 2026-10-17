@@ -424,7 +424,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
             onDragOver: (event: React.DragEvent) => event.preventDefault(),
             onDrop: () => moveTab(tab.key),
             onDragEnd: () => setDraggedTab(null),
-            title: 'Arraste para reordenar',
+            title: 'Arraste para reordenar · clique duas vezes no nome para editar',
           };
           if (tab.key === 'expense' || tab.key === 'income' || tab.key === 'all') {
             const tabKey = tab.key;
@@ -437,12 +437,12 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
             const count = tabKey === 'expense'
               ? items.filter((item) => item.kind === 'expense' && item.status !== 'cancelled' && !item.groupId).length
               : tabKey === 'income' ? items.filter((item) => item.kind === 'income' && item.status !== 'cancelled').length : null;
-            return <div key={tab.key} {...common} className={`forecast-view-tab-item ${view === tabKey ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`}><button className={view === tabKey ? 'active' : ''} onClick={() => setView(tabKey)}>{label}{count !== null && <span>{count}</span>}<span className="forecast-tab-amount" title={tabKey === 'all' ? 'Saldo previsto líquido: receitas menos despesas' : undefined}>{formatCurrencyDecimal(amount)}</span></button><button className="forecast-tab-action" type="button" aria-label={`Editar aba ${label}`} title={`Editar ${label}`} onClick={() => setEditingBuiltinTab(tabKey)}><Icon name="edit" size={13} /></button></div>;
+            return <div key={tab.key} {...common} className={`forecast-view-tab-item ${view === tabKey ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`}><button className={view === tabKey ? 'active' : ''} onClick={() => setView(tabKey)} onDoubleClick={() => setEditingBuiltinTab(tabKey)}>{label}{count !== null && <span>{count}</span>}<span className="forecast-tab-amount" title={tabKey === 'all' ? 'Saldo previsto líquido: receitas menos despesas' : undefined}>{formatCurrencyDecimal(amount)}</span></button></div>;
           }
           if (!('group' in tab)) return null;
           const group = tab.group;
           const groupRows = activeRows.filter((item) => item.kind === 'expense' && item.groupId === group.id);
-          return <div key={tab.key} {...common} className={`forecast-view-tab-item ${view === tab.view ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`}><button className={view === tab.view ? 'active' : ''} onClick={() => setView(tab.view)}>{group.name} <span>{groupRows.length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(groupRows, 'amount'))}</span></button><button className="forecast-tab-action" type="button" aria-label={`Editar aba ${group.name}`} title={`Editar ${group.name}`} onClick={() => setGroupDialog(group)}><Icon name="edit" size={13} /></button></div>;
+          return <div key={tab.key} {...common} className={`forecast-view-tab-item ${view === tab.view ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`}><button className={view === tab.view ? 'active' : ''} onClick={() => setView(tab.view)} onDoubleClick={() => setGroupDialog(group)}>{group.name} <span>{groupRows.length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(groupRows, 'amount'))}</span></button></div>;
         })}
         <button className="forecast-add-tab" onClick={() => setGroupDialog(null)}>
           <Icon name="plus" size={14} /> Nova aba
