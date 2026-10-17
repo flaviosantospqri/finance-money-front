@@ -104,7 +104,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
-    [reconcileTarget, setReconcileTarget] = useState(''),
+    [reconcileTargets, setReconcileTargets] = useState<string[]>([]),
     [closeReason, setCloseReason] = useState('');
   const [pendingCancel, setPendingCancel] = useState<Forecast | null>(null);
   const [showProjectionBreakdown, setShowProjectionBreakdown] = usePersistentState('fllatech-money-forecasts-projection-breakdown', false);
@@ -265,7 +265,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       ]);
       setDetails(row);
       setMatches(candidates);
-      setReconcileTarget('');
+      setReconcileTargets([]);
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -275,11 +275,11 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     }
   }
   async function reconcile() {
-    if (!details || !reconcileTarget) return;
+    if (!details || reconcileTargets.length === 0) return;
     setBusy(true);
     try {
-      await forecastsApi.reconcile(details.id, reconcileTarget);
-      toast.success('Movimentação conciliada.');
+      await forecastsApi.reconcile(details.id, reconcileTargets);
+      toast.success(`${reconcileTargets.length} movimentação(ões) conciliada(s).`);
       setDetails(null);
       await load();
     } catch (reason) {
@@ -581,10 +581,10 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         <ForecastDetail
           item={details}
           matches={matches}
-          target={reconcileTarget}
+          targets={reconcileTargets}
           closeReason={closeReason}
           busy={busy}
-          onTarget={setReconcileTarget}
+          onTarget={(entryId) => setReconcileTargets((current) => current.includes(entryId) ? current.filter((id) => id !== entryId) : [...current, entryId])}
           onReason={setCloseReason}
           onClose={() => setDetails(null)}
           onReconcile={() => void reconcile()}

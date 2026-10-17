@@ -184,7 +184,7 @@ export function InvestmentEvolutionPage() {
           <CompareMetric label="Aportes no período" items={comparisonData} valueKey="contributions" months={[firstCompareMonth, secondCompareMonth]} positive />
           <CompareMetric label="Devoluções no período" items={comparisonData} valueKey="refunds" months={[firstCompareMonth, secondCompareMonth]} />
           <CompareMetric label="Rendimentos no período" items={comparisonData} valueKey="income" months={[firstCompareMonth, secondCompareMonth]} positive />
-          <CompareMetric label="Variação patrimonial" items={comparisonData} valueKey="variation" months={[firstCompareMonth, secondCompareMonth]} />
+          <CompareVariationMetric items={comparisonData} months={[firstCompareMonth, secondCompareMonth]} />
         </> : <>
           <Metric label="Patrimônio acumulado" value={summary?.endingBalance ?? "0.00"} />
           <Metric label="Aportes no período" value={summary?.contributions ?? "0.00"} positive />
@@ -218,6 +218,16 @@ function CompareMetric({ label, items, valueKey, months, positive = false }: { l
     const value = item?.summary[valueKey];
     return <p key={`${month}-${index}`}><small>{fullMonthLabel(month)}</small><strong className={positive ? "investment-evolution-positive" : ""}>{formatCurrencyDecimal(typeof value === "string" ? value : "0.00")}</strong></p>;
   })}</div></article>;
+}
+
+function CompareVariationMetric({ items, months }: { items: ComparisonMonth[]; months: [string, string] }) {
+  const firstBalance = toCents(items[0]?.summary.endingBalance ?? "0.00");
+  const secondBalance = toCents(items[1]?.summary.endingBalance ?? "0.00");
+  const difference = secondBalance - firstBalance;
+  return <article className="cash-book-summary-card investment-evolution-compare-card">
+    <span>Variação patrimonial</span>
+    <div><p><small>{fullMonthLabel(months[0])} → {fullMonthLabel(months[1])}</small><strong className={difference >= 0n ? "investment-evolution-positive" : "investment-evolution-negative"}>{formatCurrencyDecimal(fromCents(difference))}</strong></p></div>
+  </article>;
 }
 
 function YearMovementTooltip({ active, payload, label, years, colors }: TooltipContentProps & { years: string[]; colors: string[] }) {

@@ -189,10 +189,10 @@ export const forecastsApi = {
         daysDifference: number;
       }[]
     >(`/financial-forecasts/${id}/matches`),
-  reconcile: (id: string, entryId: string, amount?: string) =>
+  reconcile: (id: string, entryIds: string[]) =>
     request(`/financial-forecasts/${id}/reconcile`, {
       method: 'POST',
-      body: JSON.stringify({ entryId, amount }),
+      body: JSON.stringify({ entryIds }),
     }),
   unlink: (id: string, reconciliationId: string) =>
     request(`/financial-forecasts/${id}/reconciliations/${reconciliationId}`, {

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Icon } from '../ui/Icon';
-import { SelectField } from '../ui/SelectField';
 import {
   forecastsApi,
   type ForecastDetails,
@@ -11,7 +10,7 @@ import { statusLabel } from './forecastUtils';
 export function ForecastDetail({
   item,
   matches,
-  target,
+  targets,
   closeReason,
   busy,
   onTarget,
@@ -23,7 +22,7 @@ export function ForecastDetail({
 }: {
   item: ForecastDetails;
   matches: Awaited<ReturnType<typeof forecastsApi.matches>>;
-  target: string;
+  targets: string[];
   closeReason: string;
   busy: boolean;
   onTarget: (value: string) => void;
@@ -117,13 +116,23 @@ export function ForecastDetail({
             <span>Filtrar movimentações</span>
             <input aria-label="Filtrar movimentações do Livro Caixa" placeholder="Digite nome, categoria, conta ou data" value={candidateSearch} onChange={(event) => setCandidateSearch(event.target.value)} />
           </label>
-          <SelectField ariaLabel="Movimentação para conciliar" value={target} placeholder="Selecione uma movimentação" options={visibleMatches.map((row, index) => ({ value: row.id, label: `${index === 0 && row.id === bestMatch?.id ? '★ Melhor correspondência · ' : ''}${candidateLabel(row)}` }))} onValueChange={onTarget} />
+          <div className="forecast-match-list" role="group" aria-label="Movimentações do Livro Caixa para conciliar">
+            {visibleMatches.length === 0 ? <p className="forecast-match-empty">Nenhuma movimentação encontrada.</p> : visibleMatches.map((row) => {
+              const selected = targets.includes(row.id);
+              const best = row.id === bestMatch?.id;
+              return <label className={`forecast-match-option${selected ? ' selected' : ''}${best ? ' best' : ''}`} key={row.id}>
+                <input type="checkbox" checked={selected} onChange={() => onTarget(row.id)} />
+                <span>{best && <strong>★ Melhor correspondência · </strong>}{candidateLabel(row)}</span>
+              </label>;
+            })}
+          </div>
+          <small className="forecast-match-selection">{targets.length === 0 ? 'Nenhum lançamento selecionado' : `${targets.length} lançamento${targets.length === 1 ? '' : 's'} selecionado${targets.length === 1 ? '' : 's'}`}</small>
           <button
             className="secondary-button"
-            disabled={!target || busy}
+            disabled={targets.length === 0 || busy}
             onClick={onReconcile}
           >
-            Vincular movimentação
+            {targets.length === 0 ? 'Selecione lançamentos' : `Vincular ${targets.length} lançamento${targets.length === 1 ? '' : 's'}`}
           </button>
           <h3>Encerrar com diferença</h3>
           <textarea

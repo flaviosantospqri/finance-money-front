@@ -645,6 +645,15 @@ button { color: inherit; }
 .forecast-detail-body textarea { min-height: 75px; resize: vertical; }
 .forecast-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px; border: 1px solid var(--border); border-radius: 8px; }
 .forecast-link small { display: block; margin-top: 4px; color: var(--text-soft); }
+.forecast-match-list { display: grid; gap: 4px; width: 100%; max-height: 250px; overflow: auto; padding: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.forecast-match-option { display: grid; grid-template-columns: 16px minmax(0,1fr); align-items: start; gap: 8px; min-width: 0; padding: 8px; border-radius: 6px; color: var(--text); cursor: pointer; }
+.forecast-match-option:hover, .forecast-match-option.selected { background: var(--surface-muted); }
+.forecast-match-option.best { border: 1px solid var(--border); }
+.forecast-match-option input { width: 15px; height: 15px; margin: 2px 0 0; accent-color: var(--accent); }
+.forecast-match-option > span { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; font-size: 12px; }
+.forecast-match-option strong { color: var(--accent); }
+.forecast-match-empty, .forecast-match-selection { color: var(--text-soft); font-size: 12px; }
+.forecast-match-selection { margin-top: -6px; }
 .forecast-view-tabs { display: flex; min-width: 0; gap: 6px; padding: 4px; overflow-x: auto; overscroll-behavior-x: contain; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); scrollbar-width: thin; }
 .forecast-view-tabs > button, .forecast-view-tabs .forecast-view-tab-item { flex: 0 0 auto; white-space: nowrap; }
 .forecast-view-tabs button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 7px; color: var(--text-soft); background: transparent; cursor: pointer; font-weight: 600; }
@@ -808,9 +817,11 @@ button { color: inherit; }
   .dashboard-actions > button { flex: 1; justify-content: center; }
   .dashboard-state { flex-direction: column; }
   .investment-evolution-charts { grid-template-columns: 1fr; }
-  .investment-evolution-toolbar > label { flex: 1 1 calc(50% - 8px); }
+  .investment-evolution-toolbar { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+  .investment-evolution-toolbar > label:not(.investment-evolution-period-toggle) { flex: 0 0 190px; }
+  .investment-evolution-toolbar > label.investment-evolution-period-toggle { flex: 0 0 auto; white-space: nowrap; }
   .investment-evolution-toolbar select { width: 100%; min-width: 0; }
-  .investment-evolution-toolbar .secondary-button { flex: 1 1 100%; margin-left: 0; }
+  .investment-evolution-toolbar .secondary-button { flex: 0 0 auto; margin-left: 0; white-space: nowrap; }
   .investment-evolution-chart-area { height: 230px; }
   .investment-evolution-history .cash-book-table-heading { align-items: flex-start; gap: 8px; }
   .investment-evolution-history-actions { width: 100%; flex-wrap: wrap; justify-content: space-between; }
@@ -820,6 +831,12 @@ button { color: inherit; }
   .forecasts-toolbar .primary-button { flex: 1; }
 }
 @media (max-width: 600px) { .forecast-tab-totals dl { grid-template-columns: 1fr; } }
+
+@media (max-width: 560px) {
+  .investment-evolution-summary { grid-template-columns: minmax(0, 1fr); }
+  .investment-evolution-compare-card p { display: grid; gap: 3px; }
+  .investment-evolution-compare-card p strong { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+}
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
