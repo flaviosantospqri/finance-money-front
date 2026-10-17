@@ -19,6 +19,7 @@ import {
   type InvestmentSummary,
 } from "../../features/investments/investmentsApi";
 import { formatCurrencyDecimal, formatMonthYear } from "../../lib/formatters";
+import { usePersistentState } from "../../lib/usePersistentState";
 
 const today = () => {
   const date = new Date();
@@ -57,9 +58,9 @@ export function InvestmentsPage({ month }: { month: string }) {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [summary, setSummary] = useState<InvestmentSummary | null>(null);
   const [movements, setMovements] = useState<InvestmentMovement[]>([]);
-  const [applicationId, setApplicationId] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
+  const [applicationId, setApplicationId] = usePersistentState("fllatech-money-investments-application", "");
+  const [accountId, setAccountId] = usePersistentState("fllatech-money-investments-account", "");
+  const [showInactive, setShowInactive] = usePersistentState("fllatech-money-investments-show-inactive", false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -116,6 +117,7 @@ export function InvestmentsPage({ month }: { month: string }) {
         setApplications(apps);
         setAccounts(loadedAccounts);
         setApplicationId((current) => apps.some((app) => app.id === current) ? current : "");
+        setAccountId((current) => loadedAccounts.some((account) => account.id === current) ? current : "");
       })
       .catch((reason) => {
         if (active)

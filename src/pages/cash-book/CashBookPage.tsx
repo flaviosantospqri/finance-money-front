@@ -18,6 +18,7 @@ import type {
   FinancialCategory,
 } from "../../features/cash-book/cashBookApi";
 import { formatCurrencyDecimal, formatMonthYear } from "../../lib/formatters";
+import { usePersistentState } from "../../lib/usePersistentState";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { Icon } from "../../components/ui/Icon";
 import { SelectField } from "../../components/ui/SelectField";
@@ -70,26 +71,26 @@ function formatMonth(month: string) {
 }
 
 export function CashBookPage() {
-  const [month, onMonthChange] = useState(currentMonth);
+  const [month, onMonthChange] = usePersistentState("fllatech-money-cash-book-month", currentMonth);
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [applications, setApplications] = useState<InvestmentApplication[]>([]);
   const [categories, setCategories] = useState<FinancialCategory[]>([]);
   const [managedCategories, setManagedCategories] = useState<FinancialCategory[]>([]);
   const [destinations, setDestinations] = useState<{ id: string; name: string; active: boolean }[]>([]);
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = usePersistentState("fllatech-money-cash-book-account", "");
   const [summary, setSummary] = useState<CashBookSummary | null>(null);
   const [pageData, setPageData] = useState<CashBookPageResult | null>(null);
   const [referenceLoading, setReferenceLoading] = useState(true);
   const [loadedQuery, setLoadedQuery] = useState("");
   const [loadedContextKey, setLoadedContextKey] = useState("");
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [type, setType] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = usePersistentState("fllatech-money-cash-book-search", "");
+  const [type, setType] = usePersistentState("fllatech-money-cash-book-type", "");
+  const [categoryId, setCategoryId] = usePersistentState("fllatech-money-cash-book-category", "");
+  const [fromDate, setFromDate] = usePersistentState("fllatech-money-cash-book-from-date", "");
+  const [toDate, setToDate] = usePersistentState("fllatech-money-cash-book-to-date", "");
+  const [page, setPage] = usePersistentState("fllatech-money-cash-book-page", 1);
+  const [pageSize, setPageSize] = usePersistentState("fllatech-money-cash-book-page-size", 10);
   const [drawer, setDrawer] = useState<DrawerState>(null);
   const [pendingDelete, setPendingDelete] = useState<CashBookEntry | null>(
     null,
@@ -123,6 +124,7 @@ export function CashBookPage() {
     ]);
     setAccounts(loadedAccounts);
     setCategories(loadedCategories);
+    setCategoryId((current) => loadedCategories.some((category) => category.id === current) ? current : '');
     setDestinations(loadedDestinations);
     setAccountId((current) => loadedAccounts.some((account) => account.id === current) ? current : loadedAccounts[0]?.id || "");
   }, []);
@@ -139,6 +141,7 @@ export function CashBookPage() {
         if (!active) return;
         setAccounts(loadedAccounts);
         setCategories(loadedCategories);
+        setCategoryId((current) => loadedCategories.some((category) => category.id === current) ? current : '');
         setDestinations(loadedDestinations);
         setApplications(loadedApplications);
         setAccountId((current) => current || loadedAccounts[0]?.id || "");

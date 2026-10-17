@@ -17,6 +17,7 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { PlaceholderPage } from './pages/placeholder/PlaceholderPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { demoTransactions } from './data/demoTransactions';
+import { usePersistentState } from './lib/usePersistentState';
 import type { PageKey, Transaction, UserProfile } from './types';
 import './App.css';
 
@@ -51,6 +52,17 @@ const defaultProfile: UserProfile = {
   photo: null,
 };
 const profileStorageKey = 'fllatech-money-profile';
+const lastPageStorageKey = 'fllatech-money-last-page';
+
+function loadInitialPage(): PageKey {
+  const routePage = pageFromPath(window.location.pathname);
+  if (window.location.pathname !== '/') return routePage;
+  try {
+    const storedPage = localStorage.getItem(lastPageStorageKey);
+    if (storedPage && storedPage in pageRoutes) return storedPage as PageKey;
+  } catch { /* The URL remains the fallback when storage is unavailable. */ }
+  return routePage;
+}
 
 function loadProfile(): UserProfile {
   try {
@@ -64,17 +76,15 @@ function loadProfile(): UserProfile {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<PageKey>(() =>
-    pageFromPath(window.location.pathname),
-  );
+  const [activePage, setActivePage] = useState<PageKey>(loadInitialPage);
   const [transactions, setTransactions] = useState(demoTransactions);
   const [drawer, setDrawer] = useState<DrawerState>(null);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
-  const [month, setMonth] = useState(() => {
+  const [month, setMonth] = usePersistentState('fllatech-money-month', () => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = usePersistentState<'light' | 'dark'>('fllatech-money-theme', 'light');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile>(loadProfile);
 
@@ -85,6 +95,12 @@ function App() {
       // The page still works for this session if browser storage is unavailable.
     }
   }, [profile]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(lastPageStorageKey, activePage);
+    } catch { /* The URL still preserves the current page. */ }
+  }, [activePage]);
 
   useEffect(() => {
     function syncPageWithLocation() {

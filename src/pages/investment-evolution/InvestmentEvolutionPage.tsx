@@ -5,6 +5,7 @@ import type { FinancialAccount } from "../../features/cash-book/cashBookApi";
 import { investmentEvolutionApi, type InvestmentEvolutionSummary, type MonthlyInvestmentEvolution } from "../../features/investment-evolution/investmentEvolutionApi";
 import type { InvestmentApplication } from "../../features/investments/investmentsApi";
 import { formatCurrencyDecimal, formatMonthShort, formatMonthYear } from "../../lib/formatters";
+import { usePersistentState } from "../../lib/usePersistentState";
 import { MonthNavigator } from "../../components/ui/MonthNavigator";
 import { SelectField } from "../../components/ui/SelectField";
 
@@ -15,14 +16,14 @@ type ComparisonMonth = { monthly: MonthlyInvestmentEvolution; summary: Investmen
 
 export function InvestmentEvolutionPage() {
   const initialMonth = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-  const [fromMonth, setFromMonth] = useState(`${currentYear}-01`);
-  const [toMonth, setToMonth] = useState(initialMonth);
-  const [allTime, setAllTime] = useState(false);
-  const [compareMonths, setCompareMonths] = useState(false);
-  const [firstCompareMonth, setFirstCompareMonth] = useState(`${currentYear}-01`);
-  const [secondCompareMonth, setSecondCompareMonth] = useState(initialMonth);
-  const [accountId, setAccountId] = useState("");
-  const [applicationId, setApplicationId] = useState("");
+  const [fromMonth, setFromMonth] = usePersistentState("fllatech-money-evolution-from-month", `${currentYear}-01`);
+  const [toMonth, setToMonth] = usePersistentState("fllatech-money-evolution-to-month", initialMonth);
+  const [allTime, setAllTime] = usePersistentState("fllatech-money-evolution-all-time", false);
+  const [compareMonths, setCompareMonths] = usePersistentState("fllatech-money-evolution-compare-months", false);
+  const [firstCompareMonth, setFirstCompareMonth] = usePersistentState("fllatech-money-evolution-first-month", `${currentYear}-01`);
+  const [secondCompareMonth, setSecondCompareMonth] = usePersistentState("fllatech-money-evolution-second-month", initialMonth);
+  const [accountId, setAccountId] = usePersistentState("fllatech-money-evolution-account", "");
+  const [applicationId, setApplicationId] = usePersistentState("fllatech-money-evolution-application", "");
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [applications, setApplications] = useState<InvestmentApplication[]>([]);
   const [rows, setRows] = useState<MonthlyInvestmentEvolution[]>([]);
@@ -32,7 +33,7 @@ export function InvestmentEvolutionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = usePersistentState("fllatech-money-evolution-page-size", 10);
   const historyRows = compareMonths
     ? comparisonData.map((item) => item.monthly).filter((row, index, list) => list.findIndex((item) => item.month === row.month) === index)
     : rows;
@@ -47,6 +48,8 @@ export function InvestmentEvolutionPage() {
         if (!active) return;
         setAccounts(loadedAccounts);
         setApplications(loadedApplications);
+        setAccountId((current) => loadedAccounts.some((account) => account.id === current) ? current : "");
+        setApplicationId((current) => loadedApplications.some((app) => app.id === current) ? current : "");
       })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Falha ao carregar filtros."); });
     return () => { active = false; };

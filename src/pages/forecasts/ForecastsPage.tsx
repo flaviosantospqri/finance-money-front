@@ -21,6 +21,7 @@ import type {
   FinancialCategory,
 } from '../../features/cash-book/cashBookApi';
 import { formatCurrencyDecimal } from '../../lib/formatters';
+import { usePersistentState } from '../../lib/usePersistentState';
 
 type Props = { month: string; onManageRepasses: () => void };
 type FormState = {
@@ -68,17 +69,17 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [matches, setMatches] = useState<
       Awaited<ReturnType<typeof forecastsApi.matches>>
     >([]);
-  const [search, setSearch] = useState(''),
-    [categoryId, setCategoryId] = useState(''),
-    [status, setStatus] = useState(''),
-    [view, setView] = useState<'expense' | 'income' | 'all' | `group:${string}`>('expense');
+  const [search, setSearch] = usePersistentState('fllatech-money-forecasts-search', ''),
+    [categoryId, setCategoryId] = usePersistentState('fllatech-money-forecasts-category', ''),
+    [status, setStatus] = usePersistentState('fllatech-money-forecasts-status', ''),
+    [view, setView] = usePersistentState<'expense' | 'income' | 'all' | `group:${string}`>('fllatech-money-forecasts-view', 'expense');
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [reconcileTarget, setReconcileTarget] = useState(''),
     [closeReason, setCloseReason] = useState('');
   const [pendingCancel, setPendingCancel] = useState<Forecast | null>(null);
-  const [showProjectionBreakdown, setShowProjectionBreakdown] = useState(false);
+  const [showProjectionBreakdown, setShowProjectionBreakdown] = usePersistentState('fllatech-money-forecasts-projection-breakdown', false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,6 +109,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       setSummary(totals);
       setAccounts(accountsData);
       setCategories(categoriesData);
+      setCategoryId((current) => categoriesData.some((category) => category.id === current) ? current : '');
       setDistribution(distributionData);
       setGroups(groupsData);
     } catch (reason) {
@@ -124,6 +126,12 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (view.startsWith('group:') && groups.length > 0 && !groups.some((group) => `group:${group.id}` === view)) {
+      setView('expense');
+    }
+  }, [groups, setView, view]);
 
   async function save(
     input: ForecastInput,
