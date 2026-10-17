@@ -11,6 +11,8 @@ export type Forecast = {
   kind: 'income' | 'expense';
   description: string;
   amount: string;
+  amountType: 'fixed' | 'income_percentage';
+  percentage: string | null;
   dueDate: string;
   categoryId: string;
   categoryName: string;
@@ -64,6 +66,8 @@ export type ForecastInput = {
   kind: 'income' | 'expense';
   description: string;
   amount: string;
+  amountType?: 'fixed' | 'income_percentage';
+  percentage?: string;
   dueDate: string;
   categoryId: string;
   accountId?: string;

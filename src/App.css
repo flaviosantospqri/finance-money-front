@@ -648,6 +648,9 @@ button { color: inherit; }
 .forecast-view-tabs { display: flex; gap: 6px; padding: 4px; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--surface); }
 .forecast-view-tabs button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 7px; color: var(--text-soft); background: transparent; cursor: pointer; font-weight: 600; }
 .forecast-view-tabs button.active { color: var(--text); background: var(--surface-muted); box-shadow: inset 0 0 0 1px var(--border); }
+.forecast-view-tabs > button[draggable="true"], .forecast-view-tab-item[draggable="true"] { cursor: grab; }
+.forecast-view-tabs > button[draggable="true"]:active, .forecast-view-tab-item[draggable="true"]:active { cursor: grabbing; }
+.forecast-view-tabs .is-dragging { opacity: .45; }
 .forecast-view-tabs button span { margin-left: 5px; color: var(--text-faint); font-size: 12px; }
 .forecast-view-tabs button .forecast-tab-amount,
 .forecast-view-tab-item > button:first-child .forecast-tab-amount { margin-left: 8px; color: var(--text-soft); font-size: 11px; font-weight: 600; white-space: nowrap; }

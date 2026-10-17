@@ -134,6 +134,7 @@ export function ForecastTable({
                             ? `Parcela ${item.occurrenceIndex}/${item.occurrenceCount}`
                             : item.accountName || 'Conta não definida'}
                         </small>
+                        {item.amountType === 'income_percentage' && <small>{item.percentage}% dos recebimentos previstos</small>}
                       </td>
                       <td className="description-cell"><strong>{item.categoryName}</strong><small>{item.categoryDestinationName}</small></td>
                       <td>{formatCurrencyDecimal(item.amount)}</td>
@@ -167,6 +168,7 @@ export function ForecastTable({
                             ? `Parcela ${item.occurrenceIndex}/${item.occurrenceCount}`
                             : item.accountName || 'Conta não definida'}
                         </small>
+                        {item.amountType === 'income_percentage' && <small>{item.percentage}% dos recebimentos previstos</small>}
                       </td>
                       <td className="description-cell">
                         {item.kind === 'expense' ? (

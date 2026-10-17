@@ -73,6 +73,8 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [categoryId, setCategoryId] = usePersistentState('fllatech-money-forecasts-category', ''),
     [status, setStatus] = usePersistentState('fllatech-money-forecasts-status', ''),
     [view, setView] = usePersistentState<'expense' | 'income' | 'all' | `group:${string}`>('fllatech-money-forecasts-view', 'expense');
+  const [tabOrder, setTabOrder] = usePersistentState<string[]>('fllatech-money-forecasts-tab-order', []);
+  const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -297,6 +299,26 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
   const activeRows = items.filter((item) => item.status !== 'cancelled');
   const activeIncomeRows = activeRows.filter((item) => item.kind === 'income');
   const activeExpenseRows = activeRows.filter((item) => item.kind === 'expense');
+  const tabs = [
+    { key: 'expense', view: 'expense' as const },
+    { key: 'income', view: 'income' as const },
+    { key: 'all', view: 'all' as const },
+    ...groups.map((group) => ({ key: `group:${group.id}`, view: `group:${group.id}` as const, group })),
+  ];
+  const orderedTabs = [
+    ...tabOrder.map((key) => tabs.find((tab) => tab.key === key)).filter((tab): tab is (typeof tabs)[number] => Boolean(tab)),
+    ...tabs.filter((tab) => !tabOrder.includes(tab.key)),
+  ];
+  function moveTab(targetKey: string) {
+    if (!draggedTab || draggedTab === targetKey) return;
+    const currentOrder = orderedTabs.map((tab) => tab.key);
+    const from = currentOrder.indexOf(draggedTab);
+    const to = currentOrder.indexOf(targetKey);
+    if (from < 0 || to < 0) return;
+    currentOrder.splice(to, 0, currentOrder.splice(from, 1)[0]);
+    setTabOrder(currentOrder);
+    setDraggedTab(null);
+  }
   const currentTabRows = activeRows.filter((item) => {
     if (view === 'income') return item.kind === 'income';
     if (view === 'all') return true;
@@ -390,47 +412,22 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
         </label>
       </section>
       <nav className="forecast-view-tabs" aria-label="Tipo de previsão">
-        <button
-          className={view === 'expense' ? 'active' : ''}
-          onClick={() => setView('expense')}
-        >
-          Contas a pagar{' '}
-          <span>{items.filter((item) => item.kind === 'expense' && item.status !== 'cancelled' && !item.groupId).length}</span>
-          <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'expense' && !item.groupId), 'amount'))}</span>
-        </button>
-        <button
-          className={view === 'income' ? 'active' : ''}
-          onClick={() => setView('income')}
-        >
-          Recebimentos{' '}
-          <span>{items.filter((item) => item.kind === 'income' && item.status !== 'cancelled').length}</span>
-          <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'income'), 'amount'))}</span>
-        </button>
-        <button
-          className={view === 'all' ? 'active' : ''}
-          onClick={() => setView('all')}
-        >
-          Todas
-          <span className="forecast-tab-amount" title="Saldo previsto líquido: receitas menos despesas">{formatCurrencyDecimal(sumForecastNet(activeRows, 'amount'))}</span>
-        </button>
-        {groups.map((group) => {
-          const groupView = `group:${group.id}` as const;
+        {orderedTabs.map((tab) => {
+          const common = {
+            draggable: true,
+            onDragStart: () => setDraggedTab(tab.key),
+            onDragOver: (event: React.DragEvent) => event.preventDefault(),
+            onDrop: () => moveTab(tab.key),
+            onDragEnd: () => setDraggedTab(null),
+            title: 'Arraste para reordenar',
+          };
+          if (tab.key === 'expense') return <button key={tab.key} {...common} className={`${view === 'expense' ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`} onClick={() => setView('expense')}>Contas a pagar <span>{items.filter((item) => item.kind === 'expense' && item.status !== 'cancelled' && !item.groupId).length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'expense' && !item.groupId), 'amount'))}</span></button>;
+          if (tab.key === 'income') return <button key={tab.key} {...common} className={`${view === 'income' ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`} onClick={() => setView('income')}>Recebimentos <span>{items.filter((item) => item.kind === 'income' && item.status !== 'cancelled').length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(activeRows.filter((item) => item.kind === 'income'), 'amount'))}</span></button>;
+          if (tab.key === 'all') return <button key={tab.key} {...common} className={`${view === 'all' ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`} onClick={() => setView('all')}>Todas<span className="forecast-tab-amount" title="Saldo previsto líquido: receitas menos despesas">{formatCurrencyDecimal(sumForecastNet(activeRows, 'amount'))}</span></button>;
+          if (!('group' in tab)) return null;
+          const group = tab.group;
           const groupRows = activeRows.filter((item) => item.kind === 'expense' && item.groupId === group.id);
-          return (
-            <div className={`forecast-view-tab-item ${view === groupView ? 'active' : ''}`} key={group.id}>
-              <button
-                className={view === groupView ? 'active' : ''}
-                onClick={() => setView(groupView)}
-              >
-                {group.name}{' '}
-                <span>{groupRows.length}</span>
-                <span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(groupRows, 'amount'))}</span>
-              </button>
-              <button className="forecast-tab-action" type="button" aria-label={`Editar aba ${group.name}`} title={`Editar ${group.name}`} onClick={() => setGroupDialog(group)}>
-                <Icon name="edit" size={13} />
-              </button>
-            </div>
-          );
+          return <div key={tab.key} {...common} className={`forecast-view-tab-item ${view === tab.view ? 'active' : ''}${draggedTab === tab.key ? ' is-dragging' : ''}`}><button className={view === tab.view ? 'active' : ''} onClick={() => setView(tab.view)}>{group.name} <span>{groupRows.length}</span><span className="forecast-tab-amount">{formatCurrencyDecimal(sumForecastField(groupRows, 'amount'))}</span></button><button className="forecast-tab-action" type="button" aria-label={`Editar aba ${group.name}`} title={`Editar ${group.name}`} onClick={() => setGroupDialog(group)}><Icon name="edit" size={13} /></button></div>;
         })}
         <button className="forecast-add-tab" onClick={() => setGroupDialog(null)}>
           <Icon name="plus" size={14} /> Nova aba

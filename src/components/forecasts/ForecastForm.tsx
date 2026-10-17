@@ -41,6 +41,8 @@ export function ForecastForm({
     ),
     [description, setDescription] = useState(item?.description ?? ''),
     [amount, setAmount] = useState(item?.amount ?? ''),
+    [amountType, setAmountType] = useState<'fixed' | 'income_percentage'>(item?.amountType ?? 'fixed'),
+    [percentage, setPercentage] = useState(item?.percentage ?? ''),
     [dueDate, setDueDate] = useState(item?.dueDate ?? currentDate()),
     [categoryId, setCategoryId] = useState(item?.categoryId ?? ''),
     [accountId, setAccountId] = useState(item?.accountId ?? ''),
@@ -57,12 +59,13 @@ export function ForecastForm({
   const selectedCategory = choices.find((category) => category.id === categoryId);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const normalized = normalizeMoney(amount);
+    const normalized = amountType === 'fixed' ? normalizeMoney(amount) : '0.01';
+    const normalizedPercentage = normalizeMoney(percentage);
     if (
       !description.trim() ||
       !categoryId ||
-      !/^\d{1,12}(\.\d{1,2})?$/.test(normalized) ||
-      !/[1-9]/.test(normalized)
+      (amountType === 'fixed' && (!/^\d{1,12}(\.\d{1,2})?$/.test(normalized) || !/[1-9]/.test(normalized))) ||
+      (amountType === 'income_percentage' && (!/^\d{1,3}(\.\d{1,2})?$/.test(normalizedPercentage) || Number(normalizedPercentage) <= 0 || Number(normalizedPercentage) > 100))
     ) {
       setError('Informe descrição, valor positivo e categoria válida.');
       return;
@@ -72,6 +75,8 @@ export function ForecastForm({
         kind,
         description: description.trim(),
         amount: normalized,
+        amountType,
+        ...(amountType === 'income_percentage' ? { percentage: normalizedPercentage } : {}),
         dueDate,
         categoryId,
         accountId: accountId || undefined,
@@ -121,6 +126,7 @@ export function ForecastForm({
               <SelectField ariaLabel="Tipo da previsão" value={kind} options={[{ value: 'income', label: 'Receita' }, { value: 'expense', label: 'Despesa' }]} onValueChange={(value) => {
                   const next = value as 'income' | 'expense';
                   setKind(next);
+                  if (next === 'income') setAmountType('fixed');
                   setCategoryId(
                     categories.find((c) => c.nature === next)?.id ?? '',
                   );
@@ -136,15 +142,16 @@ export function ForecastForm({
                 onChange={(e) => setDescription(e.target.value)}
               />
             </label>
+            {kind === 'expense' && <label className="form-field">
+              <span>Forma de cálculo</span>
+              <SelectField ariaLabel="Forma de cálculo" value={amountType} onValueChange={(value) => setAmountType(value as typeof amountType)} options={[{ value: 'fixed', label: 'Valor fixo (R$)' }, { value: 'income_percentage', label: 'Percentual dos recebimentos' }]} />
+              {amountType === 'income_percentage' && <small>O valor será calculado sobre a soma dos recebimentos previstos no mesmo mês.</small>}
+            </label>}
             <label className="form-field">
-              <span>Valor previsto (R$)</span>
-              <input
-                required
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
+              <span>{amountType === 'income_percentage' ? 'Percentual dos recebimentos (%)' : 'Valor previsto (R$)'}</span>
+              <input required inputMode="decimal" value={amountType === 'income_percentage' ? percentage : amount} onChange={(e) => amountType === 'income_percentage' ? setPercentage(e.target.value) : setAmount(e.target.value)} />
               {item &&
+                amountType === 'fixed' &&
                 Number(item.realized) > 0 &&
                 Math.round(Number(item.realized) * 100) !==
                   Math.round(Number(item.amount) * 100) && (
