@@ -455,6 +455,13 @@ button { color: inherit; }
 .investment-evolution-toolbar .secondary-button { min-height: 36px; margin-left: auto; }
 .investment-evolution-summary .cash-book-summary-card > span { color: var(--text-soft); font-size: 13px; }
 .investment-evolution-summary .cash-book-summary-card strong { margin-top: 10px; }
+.investment-evolution-compare-card > div { display: grid; gap: 3px; margin-top: 6px; }
+.investment-evolution-compare-card p { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0; }
+.investment-evolution-compare-card p small { color: var(--text-soft); font-size: 11px; }
+.investment-evolution-compare-card p strong { margin: 0 !important; font-size: 15px; white-space: nowrap; }
+.investment-evolution-comparison-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 4px; color: var(--text-soft); font-size: 12px; }
+.investment-evolution-comparison-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.investment-evolution-comparison-legend i { width: 10px; height: 10px; display: inline-block; border-radius: 2px; }
 .investment-evolution-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .investment-evolution-chart { min-width: 0; padding: 15px; }
 .investment-evolution-chart header h2 { margin: 0; color: var(--text); font-size: 15px; }
