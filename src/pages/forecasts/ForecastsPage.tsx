@@ -25,6 +25,7 @@ import { formatCurrencyDecimal } from '../../lib/formatters';
 import { usePersistentState } from '../../lib/usePersistentState';
 
 type Props = { month: string; onManageRepasses: () => void };
+type CopyMonthPreview = { sourcePeriod: string; sourceCount: number; targetCount: number };
 type FormState = {
   item: Forecast | null;
   scope: 'occurrence' | 'future';
@@ -108,6 +109,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [reconcileTargets, setReconcileTargets] = useState<string[]>([]),
     [closeReason, setCloseReason] = useState('');
   const [pendingCancel, setPendingCancel] = useState<Forecast | null>(null);
+  const [copyMonthPreview, setCopyMonthPreview] = useState<CopyMonthPreview | null>(null);
   const [showProjectionBreakdown, setShowProjectionBreakdown] = usePersistentState('fllatech-money-forecasts-projection-breakdown', false);
 
   const load = useCallback(async () => {
@@ -257,14 +259,18 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       );
     }
   }
-  async function copyPreviousMonth() {
-    const [year, value] = month.split('-').map(Number);
+  function previousMonthOf(monthValue: string) {
+    const [year, value] = monthValue.split('-').map(Number);
     const previous = new Date(Date.UTC(year, value - 2, 1));
-    const previousMonth = `${previous.getUTCFullYear()}-${String(previous.getUTCMonth() + 1).padStart(2, '0')}`;
+    return `${previous.getUTCFullYear()}-${String(previous.getUTCMonth() + 1).padStart(2, '0')}`;
+  }
+  async function executeMonthCopy(sourcePeriod: string) {
+    if (copyingMonth) return;
     setCopyingMonth(true);
     setError('');
     try {
-      const result = await forecastsApi.copyMonth(previousMonth, month);
+      const result = await forecastsApi.copyMonth(sourcePeriod, month);
+      setCopyMonthPreview(null);
       if (result.sourceCount === 0) {
         toast.info('Não há previsões no mês anterior para copiar.');
       } else if (result.copied === 0) {
@@ -276,6 +282,31 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível copiar as previsões do mês anterior.');
+    } finally {
+      setCopyingMonth(false);
+    }
+  }
+  async function copyPreviousMonth() {
+    if (copyingMonth) return;
+    const sourcePeriod = previousMonthOf(month);
+    setCopyingMonth(true);
+    setError('');
+    try {
+      const [sourceRows, targetRows] = await Promise.all([
+        forecastsApi.getAll({ period: sourcePeriod }),
+        forecastsApi.getAll({ period: month }),
+      ]);
+      const sourceCount = sourceRows.filter((item) => item.status !== 'cancelled').length;
+      const targetCount = targetRows.filter((item) => item.status !== 'cancelled').length;
+      if (sourceCount === 0) {
+        toast.info('Não há previsões no mês anterior para copiar.');
+      } else if (targetCount > 0) {
+        setCopyMonthPreview({ sourcePeriod, sourceCount, targetCount });
+      } else {
+        await executeMonthCopy(sourcePeriod);
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível preparar a cópia das previsões.');
     } finally {
       setCopyingMonth(false);
     }
@@ -654,6 +685,20 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
             toast.success('Nome da aba atualizado.');
           }}
         />
+      )}
+      {copyMonthPreview && (
+        <div className="modal-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCopyMonthPreview(null); }}>
+          <section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="forecast-copy-title">
+            <h2 id="forecast-copy-title">A competência já tem previsões</h2>
+            <p>O mês selecionado já contém {copyMonthPreview.targetCount} {copyMonthPreview.targetCount === 1 ? 'lançamento' : 'lançamentos'}. Copiar adicionará previsões do mês anterior que ainda não existam e manterá os lançamentos atuais. Entradas com descrições diferentes serão mantidas, mesmo quando tiverem o mesmo valor.</p>
+            <div className="dialog-actions">
+              <button className="secondary-button" type="button" onClick={() => setCopyMonthPreview(null)}>Cancelar</button>
+              <button className="primary-button" type="button" disabled={copyingMonth} onClick={() => void executeMonthCopy(copyMonthPreview.sourcePeriod)}>
+                {copyingMonth ? 'Copiando…' : `Copiar ${copyMonthPreview.sourceCount} previsões`}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </main>
   );
