@@ -182,7 +182,6 @@ function App() {
 
         {activePage === 'dashboard' && (
           <DashboardPage
-            month={month}
             onOpenCashBook={() => navigate('cash-book')}
             onOpenClosing={() => navigate('closing')}
             onOpenInvestments={() => navigate('investment-evolution')}

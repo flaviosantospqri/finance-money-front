@@ -10,7 +10,6 @@ import { formatCurrencyDecimal, formatMonthShort, formatMonthYear } from '../../
 import { usePersistentState } from '../../lib/usePersistentState';
 
 type Props = {
-  month: string;
   onOpenCashBook: () => void;
   onOpenClosing: () => void;
   onOpenInvestments: () => void;
@@ -40,6 +39,11 @@ function shiftMonth(month: string, offset: number) {
   const [year, value] = month.split('-').map(Number);
   const date = new Date(Date.UTC(year, value - 1 + offset, 1));
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function currentMonth() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function numeric(value: string | undefined) { return Number(value ?? 0); }
@@ -75,7 +79,8 @@ function CategoryLegend({ rows, selectedId, onSelect }: { rows: RootSlice[]; sel
   </div>;
 }
 
-export function DashboardPage({ month, onOpenCashBook, onOpenClosing, onOpenInvestments }: Props) {
+export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments }: Props) {
+  const month = currentMonth();
   const [rangeMonths, setRangeMonths] = usePersistentState('fllatech-money-dashboard-range', 12);
   const [analytics, setAnalytics] = useState<CashBookAnalytics>({ monthly: [], categoryExpenses: [] });
   const [investmentRows, setInvestmentRows] = useState<MonthlyInvestmentEvolution[]>([]);
@@ -160,7 +165,7 @@ export function DashboardPage({ month, onOpenCashBook, onOpenClosing, onOpenInve
 
   return <main className="page-content dashboard-page">
     <section className="panel dashboard-overview">
-      <div><span className="dashboard-eyebrow">SAÚDE FINANCEIRA</span><h2>Seu dinheiro, em perspectiva</h2><p>Receitas, patrimônio e despesas em um só lugar. Selecione o mês no topo e explore os gráficos.</p></div>
+      <div><span className="dashboard-eyebrow">SAÚDE FINANCEIRA</span><h2>Seu dinheiro, em perspectiva</h2><p>Receitas, patrimônio e despesas em um só lugar. Os indicadores mostram o mês atual; escolha um período para explorar a evolução.</p></div>
       <div className="dashboard-actions">
         <button className="secondary-button" onClick={onOpenClosing}>Fechamento</button>
         <button className="secondary-button" onClick={onOpenInvestments}><Icon name="trend" size={15} /> Evolução de investimentos</button>
@@ -179,7 +184,7 @@ export function DashboardPage({ month, onOpenCashBook, onOpenClosing, onOpenInve
         <MetricCard label="Receitas do mês" value={totals.income} icon="arrow-down" tone="positive" note={formatMonthYear(month)} />
         <MetricCard label="Despesas do mês" value={totals.expenses} icon="arrow-up" tone="negative" note={formatMonthYear(month)} />
         <MetricCard label="Resultado do mês" value={totals.net} icon="trend" note="Receitas menos despesas" />
-        <MetricCard label="Patrimônio investido" value={totals.investments} icon="investments" tone="positive" note="Saldo acumulado até o mês selecionado" />
+        <MetricCard label="Patrimônio investido" value={totals.investments} icon="investments" tone="positive" note={`Saldo acumulado até ${formatMonthYear(month)}`} />
       </section>
 
       <section className="dashboard-range-bar">

@@ -84,7 +84,7 @@ export function TopHeader({
         <p>{heading.subtitle}</p>
       </div>
       <div className="header-actions">
-        {!['profile', 'cash-book', 'investment-evolution', 'repasses'].includes(activePage) && (
+        {!['dashboard', 'profile', 'cash-book', 'investment-evolution', 'repasses'].includes(activePage) && (
           <DatePicker
             mode="month"
             ariaLabel="Selecionar mês do relatório"
