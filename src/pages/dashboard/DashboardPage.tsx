@@ -15,10 +15,12 @@ type Props = {
   onOpenInvestments: () => void;
 };
 
-type DashboardTotals = { balance: string; income: string; expenses: string; net: string; investments: string };
+type DashboardTotals = { income: string; expenses: string; net: string; investments: string };
+type PeriodComparison = { income: string; expenses: string; net: string; investments: string };
 type RootSlice = { id: string; name: string; amount: number };
 
-const zeroTotals: DashboardTotals = { balance: '0.00', income: '0.00', expenses: '0.00', net: '0.00', investments: '0.00' };
+const zeroTotals: DashboardTotals = { income: '0.00', expenses: '0.00', net: '0.00', investments: '0.00' };
+const zeroComparison: PeriodComparison = { income: '0.00', expenses: '0.00', net: '0.00', investments: '0.00' };
 const chartColors = ['#a3d900', '#00a878', '#5b7ddd', '#f59e0b', '#e6526b', '#9b6be8', '#16a6b6', '#e78343', '#76869a'];
 const moneyAxis = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 });
 
@@ -35,6 +37,11 @@ function sumMoney(values: string[]) {
   return `${sign}${absolute / 100n}.${String(absolute % 100n).padStart(2, '0')}`;
 }
 
+function subtractMoney(minuend: string, subtrahend: string) {
+  const negativeSubtrahend = subtrahend.startsWith('-') ? subtrahend.slice(1) : `-${subtrahend}`;
+  return sumMoney([minuend, negativeSubtrahend]);
+}
+
 function shiftMonth(month: string, offset: number) {
   const [year, value] = month.split('-').map(Number);
   const date = new Date(Date.UTC(year, value - 1 + offset, 1));
@@ -48,12 +55,29 @@ function currentMonth() {
 
 function numeric(value: string | undefined) { return Number(value ?? 0); }
 
-function MetricCard({ label, value, icon, tone, note }: { label: string; value: string; icon: 'wallet' | 'arrow-down' | 'arrow-up' | 'trend' | 'investments'; tone?: string; note: string }) {
+function MetricCard({ label, value, icon, tone, note, format = 'currency' }: { label: string; value: string; icon: 'wallet' | 'arrow-down' | 'arrow-up' | 'trend' | 'investments'; tone?: string; note: string; format?: 'currency' | 'text' }) {
   return <article className={`dashboard-metric${tone ? ` ${tone}` : ''}`}>
     <div className="dashboard-metric-heading"><span>{label}</span><i><Icon name={icon} size={16} /></i></div>
-    <strong>{formatCurrencyDecimal(value)}</strong>
+    <strong>{format === 'currency' ? formatCurrencyDecimal(value) : value}</strong>
     <small>{note}</small>
   </article>;
+}
+
+function ComparisonItem({ label, current, previous, lowerIsBetter = false }: { label: string; current: string; previous: string; lowerIsBetter?: boolean }) {
+  const delta = subtractMoney(current, previous);
+  const deltaValue = numeric(delta);
+  const previousValue = numeric(previous);
+  const percentage = previousValue === 0 ? null : (deltaValue / Math.abs(previousValue)) * 100;
+  const status = deltaValue === 0 ? 'neutral' : (lowerIsBetter ? deltaValue < 0 : deltaValue > 0) ? 'positive' : 'negative';
+  const sign = deltaValue > 0 ? '+' : deltaValue < 0 ? '−' : '';
+  const amount = `${sign}${formatCurrencyDecimal(Math.abs(deltaValue).toFixed(2))}`;
+  const percentLabel = percentage === null ? (deltaValue === 0 ? '0%' : 'sem base anterior') : `${percentage > 0 ? '+' : ''}${percentage.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+
+  return <div className="dashboard-comparison-item">
+    <span>{label}</span>
+    <strong className={status}>{amount}</strong>
+    <small className={status}>{percentLabel}</small>
+  </div>;
 }
 
 function ChartPanel({ title, subtitle, children, className = '', action }: { title: string; subtitle: string; children: React.ReactNode; className?: string; action?: React.ReactNode }) {
@@ -85,11 +109,14 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
   const [analytics, setAnalytics] = useState<CashBookAnalytics>({ monthly: [], categoryExpenses: [] });
   const [investmentRows, setInvestmentRows] = useState<MonthlyInvestmentEvolution[]>([]);
   const [totals, setTotals] = useState<DashboardTotals>(zeroTotals);
+  const [comparison, setComparison] = useState<PeriodComparison>(zeroComparison);
   const [hasAccounts, setHasAccounts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const fromMonth = shiftMonth(month, 1 - rangeMonths);
+  const previousToMonth = shiftMonth(fromMonth, -1);
+  const previousFromMonth = shiftMonth(previousToMonth, 1 - rangeMonths);
 
   useEffect(() => {
     let active = true;
@@ -100,24 +127,30 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       cashBookApi.getAnalytics(fromMonth, month),
       investmentEvolutionApi.getMonthly({ fromMonth, toMonth: month }),
       investmentEvolutionApi.getSummary({ fromMonth, toMonth: month }),
-    ]).then(async ([accounts, cashData, investmentData, investmentSummary]) => {
-      const accountSummaries = await Promise.all(accounts.map((account) => cashBookApi.getSummary(account.id, month)));
+      cashBookApi.getAnalytics(previousFromMonth, previousToMonth),
+      investmentEvolutionApi.getSummary({ fromMonth: previousFromMonth, toMonth: previousToMonth }),
+    ]).then(([accounts, cashData, investmentData, investmentSummary, previousCashData, previousInvestmentSummary]) => {
       if (!active) return;
       setHasAccounts(accounts.length > 0);
       setAnalytics(cashData);
       setInvestmentRows(investmentData);
       setTotals({
-        balance: sumMoney(accountSummaries.map((item) => item.closingBalance)),
         income: sumMoney(cashData.monthly.map((row) => row.income)),
         expenses: sumMoney(cashData.monthly.map((row) => row.expenses)),
         net: sumMoney(cashData.monthly.map((row) => row.net)),
         investments: investmentSummary.variation,
       });
+      setComparison({
+        income: sumMoney(previousCashData.monthly.map((row) => row.income)),
+        expenses: sumMoney(previousCashData.monthly.map((row) => row.expenses)),
+        net: sumMoney(previousCashData.monthly.map((row) => row.net)),
+        investments: previousInvestmentSummary.variation,
+      });
     }).catch((reason: unknown) => {
       if (active) setError(reason instanceof Error ? reason.message : 'Não foi possível carregar os dados financeiros.');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [fromMonth, month, retryKey]);
+  }, [fromMonth, month, previousFromMonth, previousToMonth, retryKey]);
 
   const monthlyRows = useMemo(() => analytics.monthly.map((row) => ({
     ...row,
@@ -162,6 +195,8 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
     return [...groups.values()].sort((a, b) => b.amount - a.amount);
   }, [periodCategories, activeRootId]);
   const periodLabel = `${formatMonthYear(fromMonth)} a ${formatMonthYear(month)}`;
+  const previousPeriodLabel = `${formatMonthYear(previousFromMonth)} a ${formatMonthYear(previousToMonth)}`;
+  const margin = numeric(totals.income) === 0 ? 0 : (numeric(totals.net) / numeric(totals.income)) * 100;
 
   return <main className="page-content dashboard-page">
     <section className="panel dashboard-overview">
@@ -180,11 +215,21 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
 
     {!loading && !error && hasAccounts && <>
       <section className="dashboard-metrics" aria-label="Indicadores do período">
-        <MetricCard label="Saldo consolidado" value={totals.balance} icon="wallet" tone="highlight" note={`Posição no fim do período · ${formatMonthYear(month)}`} />
         <MetricCard label="Receitas do período" value={totals.income} icon="arrow-down" tone="positive" note={periodLabel} />
         <MetricCard label="Despesas do período" value={totals.expenses} icon="arrow-up" tone="negative" note={periodLabel} />
-        <MetricCard label="Resultado do período" value={totals.net} icon="trend" note="Receitas menos despesas no período" />
+        <MetricCard label="Resultado do período" value={totals.net} icon="trend" tone={numeric(totals.net) < 0 ? 'negative' : 'positive'} note="Receitas menos despesas" />
+        <MetricCard label="Margem líquida" value={`${margin.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} icon="trend" tone={margin < 0 ? 'negative' : 'positive'} note="Resultado ÷ receitas" format="text" />
         <MetricCard label="Variação patrimonial" value={totals.investments} icon="investments" tone={numeric(totals.investments) < 0 ? 'negative' : 'positive'} note={periodLabel} />
+      </section>
+
+      <section className="dashboard-comparison" aria-label="Comparação com o período anterior">
+        <header><strong>Comparado ao período anterior</strong><span>{previousPeriodLabel}</span></header>
+        <div className="dashboard-comparison-grid">
+          <ComparisonItem label="Receitas" current={totals.income} previous={comparison.income} />
+          <ComparisonItem label="Despesas" current={totals.expenses} previous={comparison.expenses} lowerIsBetter />
+          <ComparisonItem label="Resultado" current={totals.net} previous={comparison.net} />
+          <ComparisonItem label="Variação patrimonial" current={totals.investments} previous={comparison.investments} />
+        </div>
       </section>
 
       <section className="dashboard-range-bar">
@@ -232,7 +277,7 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
         </ChartPanel>
       </section>
 
-      <section className="dashboard-bottom-bar"><span><i /> Movimentações e análises consolidadas de {periodLabel}; saldos posicionais no fim do período.</span><button className="text-link" onClick={onOpenCashBook}>Ver movimentações <Icon name="trend" size={14} /></button></section>
+      <section className="dashboard-bottom-bar"><span><i /> Dados consolidados de {periodLabel}.</span><button className="text-link" onClick={onOpenCashBook}>Ver movimentações <Icon name="trend" size={14} /></button></section>
     </>}
   </main>;
 }
