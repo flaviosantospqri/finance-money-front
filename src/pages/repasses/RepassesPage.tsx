@@ -272,18 +272,6 @@ export function RepassesPage({ month, onMonthChange }: Props) {
           <div className="distribution-total-status"><strong className={distributionIsValid ? '' : 'is-invalid'}>Total percentual: {percentText(percentageTotal)}%</strong><small>{flexibleDestinationId ? `${distribution.find((row) => row.id === flexibleDestinationId)?.name} ajusta para fechar o total.` : 'Todos os valores estão fixos.'}</small></div>
           <div><button className="secondary-button" onClick={() => void copyDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>Copiar para o próximo mês</button><button className="primary-button" onClick={() => void saveDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>{distributionSaving ? 'Salvando…' : 'Salvar distribuição'}</button></div>
         </footer>}
-        <details className="repasses-all-rules">
-          <summary>Ver todas as regras e vigências</summary>
-          {rows.length === 0 ? <div className="repasses-empty">Nenhuma regra cadastrada.</div> : <div className="table-scroll"><table className="transactions-table repasses-table"><thead><tr><th>Destinação</th><th>Valor</th><th>Início da vigência</th><th>Fim da vigência</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-            {rows.map((row) => {
-              const historical = isHistorical(row);
-              const activePeriod = currentPeriod();
-              const current = row.effectiveFrom <= activePeriod && (!row.effectiveTo || row.effectiveTo >= activePeriod);
-              return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{displayValue(row)}</td><td>{formatPeriod(row.effectiveFrom)}</td><td>{row.effectiveTo ? formatPeriod(row.effectiveTo) : 'Até nova alteração'}</td><td><span className={`repasse-state ${historical ? 'historical' : current ? 'current' : 'future'}`}>{historical ? 'Histórico protegido' : current ? 'Vigente' : 'Futuro'}</span></td><td><div className="repasse-actions"><button className="icon-button" aria-label={`Editar ${row.name}`} title={historical ? 'Ajuste o histórico na competência' : 'Editar vigência'} disabled={historical} onClick={() => startEdit(row)}><Icon name="edit" size={15} /></button><button className="icon-button danger-icon" aria-label={`Remover ${row.name}`} title={historical ? 'O histórico é alterado pela competência' : 'Remover vigência futura'} disabled={historical} onClick={() => setPendingDelete(row)}><Icon name="trash" size={15} /></button></div></td></tr>;
-            })}
-          </tbody></table></div>}
-          <p className="repasses-history-note">Competências anteriores permanecem preservadas.</p>
-        </details>
       </section>
 
       {modalOpen && (
