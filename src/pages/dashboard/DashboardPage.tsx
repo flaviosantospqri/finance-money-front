@@ -99,20 +99,19 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       cashBookApi.getAccounts(),
       cashBookApi.getAnalytics(fromMonth, month),
       investmentEvolutionApi.getMonthly({ fromMonth, toMonth: month }),
-      investmentEvolutionApi.getSummary({ fromMonth: month, toMonth: month }),
+      investmentEvolutionApi.getSummary({ fromMonth, toMonth: month }),
     ]).then(async ([accounts, cashData, investmentData, investmentSummary]) => {
       const accountSummaries = await Promise.all(accounts.map((account) => cashBookApi.getSummary(account.id, month)));
       if (!active) return;
-      const selectedCashMonth = cashData.monthly.find((row) => row.month === month);
       setHasAccounts(accounts.length > 0);
       setAnalytics(cashData);
       setInvestmentRows(investmentData);
       setTotals({
         balance: sumMoney(accountSummaries.map((item) => item.closingBalance)),
-        income: selectedCashMonth?.income ?? '0.00',
-        expenses: selectedCashMonth?.expenses ?? '0.00',
-        net: selectedCashMonth?.net ?? '0.00',
-        investments: investmentSummary.endingBalance,
+        income: sumMoney(cashData.monthly.map((row) => row.income)),
+        expenses: sumMoney(cashData.monthly.map((row) => row.expenses)),
+        net: sumMoney(cashData.monthly.map((row) => row.net)),
+        investments: investmentSummary.variation,
       });
     }).catch((reason: unknown) => {
       if (active) setError(reason instanceof Error ? reason.message : 'Não foi possível carregar os dados financeiros.');
@@ -130,10 +129,10 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
     contributionValue: numeric(investmentRows.find((item) => item.month === row.month)?.contributions),
   })), [analytics.monthly, investmentRows]);
 
-  const monthCategories = useMemo(() => analytics.categoryExpenses.filter((row) => row.month === month), [analytics.categoryExpenses, month]);
+  const periodCategories = useMemo(() => analytics.categoryExpenses.filter((row) => row.month >= fromMonth && row.month <= month), [analytics.categoryExpenses, fromMonth, month]);
   const rootSlices = useMemo(() => {
     const groups = new Map<string, RootSlice>();
-    for (const row of monthCategories) {
+    for (const row of periodCategories) {
       const id = row.parentCategoryId ?? row.categoryId ?? 'uncategorized';
       const name = row.parentCategoryName ?? row.categoryName ?? 'Sem categoria';
       const group = groups.get(id) ?? { id, name, amount: 0 };
@@ -141,13 +140,13 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       groups.set(id, group);
     }
     return [...groups.values()].sort((a, b) => b.amount - a.amount);
-  }, [monthCategories]);
+  }, [periodCategories]);
   const [selectedRootId, setSelectedRootId] = useState('');
   const activeRootId = rootSlices.some((row) => row.id === selectedRootId) ? selectedRootId : rootSlices[0]?.id ?? '';
   const selectedRoot = rootSlices.find((row) => row.id === activeRootId);
   const subcategorySlices = useMemo(() => {
     const groups = new Map<string, RootSlice>();
-    for (const row of monthCategories) {
+    for (const row of periodCategories) {
       if (row.parentCategoryId === activeRootId) {
         const id = row.categoryId ?? 'uncategorized';
         const name = row.categoryName ?? 'Sem categoria';
@@ -161,11 +160,12 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       }
     }
     return [...groups.values()].sort((a, b) => b.amount - a.amount);
-  }, [monthCategories, activeRootId]);
+  }, [periodCategories, activeRootId]);
+  const periodLabel = `${formatMonthYear(fromMonth)} a ${formatMonthYear(month)}`;
 
   return <main className="page-content dashboard-page">
     <section className="panel dashboard-overview">
-      <div><span className="dashboard-eyebrow">SAÚDE FINANCEIRA</span><h2>Seu dinheiro, em perspectiva</h2><p>Receitas, patrimônio e despesas em um só lugar. Os indicadores mostram o mês atual; escolha um período para explorar a evolução.</p></div>
+      <div><span className="dashboard-eyebrow">SAÚDE FINANCEIRA</span><h2>Seu dinheiro, em perspectiva</h2><p>Receitas, patrimônio e despesas consolidados no período selecionado.</p></div>
       <div className="dashboard-actions">
         <button className="secondary-button" onClick={onOpenClosing}>Fechamento</button>
         <button className="secondary-button" onClick={onOpenInvestments}><Icon name="trend" size={15} /> Evolução de investimentos</button>
@@ -179,23 +179,23 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
     {!loading && !error && !hasAccounts ? <section className="panel dashboard-empty"><span className="placeholder-icon"><Icon name="bank" size={22} /></span><h2>Comece pelo Livro Caixa</h2><p>Cadastre uma conta financeira para acompanhar receitas, despesas e investimentos neste painel.</p><button className="primary-button" onClick={onOpenCashBook}>Abrir Livro Caixa</button></section> : null}
 
     {!loading && !error && hasAccounts && <>
-      <section className="dashboard-metrics" aria-label="Indicadores do mês">
-        <MetricCard label="Saldo consolidado" value={totals.balance} icon="wallet" tone="highlight" note={`Posição em ${formatMonthYear(month)}`} />
-        <MetricCard label="Receitas do mês" value={totals.income} icon="arrow-down" tone="positive" note={formatMonthYear(month)} />
-        <MetricCard label="Despesas do mês" value={totals.expenses} icon="arrow-up" tone="negative" note={formatMonthYear(month)} />
-        <MetricCard label="Resultado do mês" value={totals.net} icon="trend" note="Receitas menos despesas" />
-        <MetricCard label="Patrimônio investido" value={totals.investments} icon="investments" tone="positive" note={`Saldo acumulado até ${formatMonthYear(month)}`} />
+      <section className="dashboard-metrics" aria-label="Indicadores do período">
+        <MetricCard label="Saldo consolidado" value={totals.balance} icon="wallet" tone="highlight" note={`Posição no fim do período · ${formatMonthYear(month)}`} />
+        <MetricCard label="Receitas do período" value={totals.income} icon="arrow-down" tone="positive" note={periodLabel} />
+        <MetricCard label="Despesas do período" value={totals.expenses} icon="arrow-up" tone="negative" note={periodLabel} />
+        <MetricCard label="Resultado do período" value={totals.net} icon="trend" note="Receitas menos despesas no período" />
+        <MetricCard label="Variação patrimonial" value={totals.investments} icon="investments" tone={numeric(totals.investments) < 0 ? 'negative' : 'positive'} note={periodLabel} />
       </section>
 
       <section className="dashboard-range-bar">
-        <div><strong>Evolução financeira</strong><span>{rangeMonths} meses até {formatMonthYear(month)}</span></div>
+        <div><strong>Evolução financeira</strong><span>Período: {periodLabel}</span></div>
         <div className="dashboard-range-options" role="group" aria-label="Período dos gráficos">
           {[6, 12, 24].map((range) => <button key={range} className={rangeMonths === range ? 'active' : ''} aria-pressed={rangeMonths === range} onClick={() => setRangeMonths(range)}>{range} meses</button>)}
         </div>
       </section>
 
       <section className="dashboard-chart-grid">
-        <ChartPanel title="Receitas e despesas" subtitle="Fluxo mensal registrado no Livro Caixa" className="dashboard-chart-large">
+        <ChartPanel title="Receitas e despesas" subtitle={`Fluxo mensal registrado no Livro Caixa · ${periodLabel}`} className="dashboard-chart-large">
           <div className="dashboard-chart-area"><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthlyRows} margin={{ top: 12, right: 12, bottom: 4, left: 8 }}>
             <defs><linearGradient id="dashboardIncomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00a878" stopOpacity={0.24} /><stop offset="95%" stopColor="#00a878" stopOpacity={0.01} /></linearGradient><linearGradient id="dashboardExpenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e6526b" stopOpacity={0.2} /><stop offset="95%" stopColor="#e6526b" stopOpacity={0.01} /></linearGradient></defs>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="4 5" vertical={false} /><XAxis dataKey="month" tickFormatter={formatMonthShort} tick={{ fill: 'var(--text-soft)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} interval={rangeMonths > 12 ? 1 : 0} /><YAxis tickFormatter={(value) => moneyAxis.format(Number(value))} width={78} tick={{ fill: 'var(--text-soft)', fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip content={<ChartTooltip month />} /><Legend />
@@ -204,7 +204,7 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
           </AreaChart></ResponsiveContainer></div>
         </ChartPanel>
 
-        <ChartPanel title="Patrimônio investido" subtitle="Saldo acumulado e aportes em cada mês" className="dashboard-chart-large" action={<button className="dashboard-chart-link" onClick={onOpenInvestments}>Detalhar <Icon name="investments" size={14} /></button>}>
+        <ChartPanel title="Patrimônio investido" subtitle={`Saldo acumulado e aportes por mês · ${periodLabel}`} className="dashboard-chart-large" action={<button className="dashboard-chart-link" onClick={onOpenInvestments}>Detalhar <Icon name="investments" size={14} /></button>}>
           <div className="dashboard-chart-area"><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthlyRows} margin={{ top: 12, right: 12, bottom: 4, left: 8 }}>
             <defs><linearGradient id="dashboardInvestmentFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a3d900" stopOpacity={0.28} /><stop offset="95%" stopColor="#a3d900" stopOpacity={0.01} /></linearGradient></defs>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="4 5" vertical={false} /><XAxis dataKey="month" tickFormatter={formatMonthShort} tick={{ fill: 'var(--text-soft)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} interval={rangeMonths > 12 ? 1 : 0} /><YAxis tickFormatter={(value) => moneyAxis.format(Number(value))} width={78} tick={{ fill: 'var(--text-soft)', fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip content={<ChartTooltip month />} /><Legend />
@@ -213,26 +213,26 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
           </AreaChart></ResponsiveContainer></div>
         </ChartPanel>
 
-        <ChartPanel title="Pagamentos de dívidas e parcelas" subtitle="Lançamentos reconhecidos por categoria ou descrição" className="dashboard-chart-large">
+        <ChartPanel title="Pagamentos de dívidas e parcelas" subtitle={`Lançamentos por mês · ${periodLabel}`} className="dashboard-chart-large">
           {monthlyRows.some((row) => row.debtValue > 0) ? <div className="dashboard-chart-area"><ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyRows} margin={{ top: 12, right: 12, bottom: 4, left: 8 }}>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="4 5" vertical={false} /><XAxis dataKey="month" tickFormatter={formatMonthShort} tick={{ fill: 'var(--text-soft)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} interval={rangeMonths > 12 ? 1 : 0} /><YAxis tickFormatter={(value) => moneyAxis.format(Number(value))} width={78} tick={{ fill: 'var(--text-soft)', fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip content={<ChartTooltip month />} />
             <Bar dataKey="debtValue" name="Pagamentos identificados" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={42} />
           </BarChart></ResponsiveContainer></div> : <div className="dashboard-chart-empty"><span className="dashboard-empty-icon"><Icon name="trend" size={20} /></span><strong>Nenhum pagamento identificado neste período</strong><p>O painel reconhece lançamentos com termos como dívida, empréstimo, financiamento ou parcela na categoria ou descrição.</p></div>}
         </ChartPanel>
 
-        <ChartPanel title="Despesas por categoria" subtitle={`Distribuição dos lançamentos em ${formatMonthYear(month)}`} className="dashboard-chart-large">
+        <ChartPanel title="Despesas por categoria" subtitle={`Distribuição dos lançamentos · ${periodLabel}`} className="dashboard-chart-large">
           {rootSlices.length ? <>
             <div className="dashboard-pie-layout"><div className="dashboard-pie-chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={rootSlices} dataKey="amount" nameKey="name" innerRadius="54%" outerRadius="78%" paddingAngle={2} stroke="var(--surface)" strokeWidth={3} onClick={(_, index) => { const row = rootSlices[Number(index)]; if (row) setSelectedRootId(row.id); }}>{rootSlices.map((row, index) => <Cell key={row.id} fill={chartColors[index % chartColors.length]} />)}</Pie><Tooltip content={<ChartTooltip />} /></PieChart></ResponsiveContainer></div><div className="dashboard-pie-total"><span>Total de despesas</span><strong>{formatCurrencyDecimal(totals.expenses)}</strong><small>Clique em uma categoria para detalhar</small></div></div>
             <CategoryLegend rows={rootSlices} selectedId={activeRootId} onSelect={setSelectedRootId} />
-          </> : <div className="dashboard-chart-empty"><span className="dashboard-empty-icon"><Icon name="reports" size={20} /></span><strong>Sem despesas categorizadas neste mês</strong><p>Quando houver lançamentos no Livro Caixa, a distribuição por categoria aparecerá aqui.</p></div>}
+          </> : <div className="dashboard-chart-empty"><span className="dashboard-empty-icon"><Icon name="reports" size={20} /></span><strong>Sem despesas categorizadas neste período</strong><p>Quando houver lançamentos no Livro Caixa, a distribuição por categoria aparecerá aqui.</p></div>}
         </ChartPanel>
 
-        <ChartPanel title="Detalhe por subcategoria" subtitle={selectedRoot ? `Composição de ${selectedRoot.name} · ${formatMonthYear(month)}` : 'Selecione uma categoria no gráfico ao lado'} className="dashboard-chart-large">
-          {subcategorySlices.length ? <><div className="dashboard-pie-layout"><div className="dashboard-pie-chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={subcategorySlices} dataKey="amount" nameKey="name" innerRadius="54%" outerRadius="78%" paddingAngle={2} stroke="var(--surface)" strokeWidth={3}>{subcategorySlices.map((row, index) => <Cell key={row.id} fill={chartColors[(index + 1) % chartColors.length]} />)}</Pie><Tooltip content={<ChartTooltip />} /></PieChart></ResponsiveContainer></div><div className="dashboard-pie-total"><span>{selectedRoot?.name ?? 'Categoria'}</span><strong>{formatCurrencyDecimal((selectedRoot?.amount ?? 0).toFixed(2))}</strong><small>Valor total no mês</small></div></div><CategoryLegend rows={subcategorySlices} /></> : <div className="dashboard-chart-empty"><span className="dashboard-empty-icon"><Icon name="reports" size={20} /></span><strong>{selectedRoot ? 'Sem detalhamento por subcategoria' : 'Escolha uma categoria'}</strong><p>{selectedRoot ? 'Esta categoria ainda não tem lançamentos em subcategorias no mês selecionado.' : 'Clique em uma categoria para ver as subcategorias e os lançamentos diretos.'}</p></div>}
+        <ChartPanel title="Detalhe por subcategoria" subtitle={selectedRoot ? `Composição de ${selectedRoot.name} · ${periodLabel}` : 'Selecione uma categoria no gráfico ao lado'} className="dashboard-chart-large">
+          {subcategorySlices.length ? <><div className="dashboard-pie-layout"><div className="dashboard-pie-chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={subcategorySlices} dataKey="amount" nameKey="name" innerRadius="54%" outerRadius="78%" paddingAngle={2} stroke="var(--surface)" strokeWidth={3}>{subcategorySlices.map((row, index) => <Cell key={row.id} fill={chartColors[(index + 1) % chartColors.length]} />)}</Pie><Tooltip content={<ChartTooltip />} /></PieChart></ResponsiveContainer></div><div className="dashboard-pie-total"><span>{selectedRoot?.name ?? 'Categoria'}</span><strong>{formatCurrencyDecimal((selectedRoot?.amount ?? 0).toFixed(2))}</strong><small>Total no período</small></div></div><CategoryLegend rows={subcategorySlices} /></> : <div className="dashboard-chart-empty"><span className="dashboard-empty-icon"><Icon name="reports" size={20} /></span><strong>{selectedRoot ? 'Sem detalhamento por subcategoria' : 'Escolha uma categoria'}</strong><p>{selectedRoot ? 'Esta categoria ainda não tem lançamentos em subcategorias no período selecionado.' : 'Clique em uma categoria para ver as subcategorias e os lançamentos diretos.'}</p></div>}
         </ChartPanel>
       </section>
 
-      <section className="dashboard-bottom-bar"><span><i /> Dados do Livro Caixa e dos investimentos, atualizados para {formatMonthYear(month)}.</span><button className="text-link" onClick={onOpenCashBook}>Ver movimentações <Icon name="trend" size={14} /></button></section>
+      <section className="dashboard-bottom-bar"><span><i /> Movimentações e análises consolidadas de {periodLabel}; saldos posicionais no fim do período.</span><button className="text-link" onClick={onOpenCashBook}>Ver movimentações <Icon name="trend" size={14} /></button></section>
     </>}
   </main>;
 }
