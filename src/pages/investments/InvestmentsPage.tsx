@@ -375,14 +375,14 @@ export function InvestmentsPage({ month }: { month: string }) {
                     <h3>{group.label}</h3>
                     <div className="table-scroll">
                       <table className="transactions-table cash-book-table investments-table investment-detail-table">
-                        <thead><tr><th>Data</th><th>Origem / descrição</th><th>Tipo</th><th className="cash-book-balance-heading">Valor</th><th className="cash-book-balance-heading">Rendimento</th><th className="cash-book-balance-heading">Saldo acumulado</th><th>Ações</th></tr></thead>
+                        <thead><tr><th>Data</th><th>Origem / descrição</th><th>Tipo</th><th className="cash-book-balance-heading">Aporte</th><th className="cash-book-balance-heading">Rendimento</th><th className="cash-book-balance-heading">Saldo acumulado</th><th>Ações</th></tr></thead>
                         <tbody>
                           {group.movements.map((movement) => (
                             <tr key={movement.id}>
                               <td>{new Intl.DateTimeFormat("pt-BR").format(new Date(`${movement.occurredAt}T12:00:00`))}</td>
                               <td>{movement.origin || movement.notes || "—"}</td>
                               <td><span className={`investment-type-chip ${movement.type}`}>{typeLabels[movement.type]}</span></td>
-                              <td className={`cash-book-money ${movement.type === "income" || movement.type === "contribution" ? "income" : ""}`}>{signedValue(movement)}</td>
+                              <td className={`cash-book-money ${movement.type === "contribution" ? "income" : ""}`}>{movement.type === "contribution" ? signedValue(movement) : "—"}</td>
                               <td className="cash-book-money income">{movement.type === "income" ? formatCurrencyDecimal(movement.amount) : "—"}</td>
                               <td className="cash-book-money balance">{formatCurrencyDecimal(movement.balance)}</td>
                               <td><div className="investment-row-actions">
