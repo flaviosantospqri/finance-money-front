@@ -485,10 +485,11 @@ button { color: inherit; }
 .investment-list-controls { display: flex; align-items: center; gap: 12px; }
 .investment-opening-balance strong { color: var(--text); font-variant-numeric: tabular-nums; }
 .investment-applications-table { min-width: 860px; }
-.investment-applications-table th:nth-child(1) { width: 48%; }
-.investment-applications-table th:nth-child(2) { width: 20%; }
-.investment-applications-table th:nth-child(3) { width: 16%; }
+.investment-applications-table th:nth-child(1) { width: 24%; }
+.investment-applications-table th:nth-child(2) { width: 24%; }
+.investment-applications-table th:nth-child(3) { width: 15%; }
 .investment-applications-table th:nth-child(4) { width: 16%; }
+.investment-applications-table th:nth-child(5) { width: 11%; }
 .investment-open-link { display: inline-flex; align-items: center; gap: 9px; padding: 0; border: 0; color: var(--text); background: transparent; cursor: pointer; font: inherit; text-align: left; }
 .investment-open-link:hover strong { color: var(--green); }
 .investment-open-link .investment-app-icon { width: 30px; height: 30px; flex-basis: 30px; }

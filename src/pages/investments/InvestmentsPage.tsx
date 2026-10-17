@@ -29,6 +29,15 @@ const normalizeMoney = (value: string) =>
   value.trim().includes(",")
     ? value.trim().replace(/\./g, "").replace(",", ".")
     : value.trim();
+const conciseAccountInstitution = (accountName: string, institution: string | null) => {
+  if (!institution) return accountName;
+  const accountPrefix = accountName.slice(0, institution.length);
+  if (accountPrefix.toLocaleLowerCase("pt-BR") === institution.toLocaleLowerCase("pt-BR")) {
+    const remainder = accountName.slice(institution.length).replace(/^\s*[-–—·|:]\s*/, "").trim();
+    return remainder ? `${remainder} · ${institution}` : institution;
+  }
+  return `${accountName} · ${institution}`;
+};
 const signedValue = (movement: InvestmentMovement) =>
   movement.type === "withdrawal" ||
   movement.type === "refund" ||
@@ -319,7 +328,7 @@ export function InvestmentsPage({ month }: { month: string }) {
               <span className="investment-app-icon"><Icon name="investments" size={20} /></span>
               <div className="investment-detail-copy">
                 <h2>{selectedApplication.name}</h2>
-                <p>{selectedApplication.investmentType} · {selectedApplication.accountName}{selectedApplication.institution ? ` · ${selectedApplication.institution}` : ""}</p>
+                <p>{conciseAccountInstitution(selectedApplication.accountName, selectedApplication.institution)}</p>
               </div>
               <div className="investment-detail-actions">
                 <button className="secondary-button" onClick={() => { setEditingApplication(selectedApplication); setShowApplication(true); }}>
@@ -438,11 +447,13 @@ export function InvestmentsPage({ month }: { month: string }) {
             ) : (
               <div className="table-scroll investment-applications-table-scroll">
                 <table className="transactions-table cash-book-table investment-applications-table">
-                  <thead><tr><th>Investimento / instituição</th><th className="cash-book-balance-heading">Saldo atual</th><th>Situação</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>Aplicação</th><th>Conta / instituição</th><th>Tipo</th><th className="cash-book-balance-heading">Saldo atual</th><th>Situação</th><th>Ações</th></tr></thead>
                   <tbody>
                     {listedApplications.map((app) => (
                       <tr key={app.id}>
-                        <td><button className="investment-open-link" onClick={() => setApplicationId(app.id)}><span className="investment-app-icon"><Icon name="investments" size={16} /></span><span className="investment-app-copy"><strong>{app.name}</strong><small>{[app.investmentType, app.institution].filter(Boolean).join(" · ")}</small></span><Icon name="chevron" size={14} /></button></td>
+                        <td><button className="investment-open-link" onClick={() => setApplicationId(app.id)}><span className="investment-app-icon"><Icon name="investments" size={16} /></span><strong>{app.name}</strong><Icon name="chevron" size={14} /></button></td>
+                        <td>{conciseAccountInstitution(app.accountName, app.institution)}</td>
+                        <td>{app.investmentType}</td>
                         <td className="cash-book-money balance">{formatCurrencyDecimal(app.balance ?? "0.00")}</td>
                         <td><span className={`investment-status${app.active ? " is-active" : ""}`}>{app.active ? "Ativa" : "Inativa"}</span></td>
                         <td><div className="investment-row-actions">
