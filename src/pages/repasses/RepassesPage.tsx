@@ -6,12 +6,12 @@ import { MonthNavigator } from '../../components/ui/MonthNavigator';
 import { SelectField } from '../../components/ui/SelectField';
 import { DatePicker } from '../../components/ui/DatePicker';
 import { forecastsApi, type Distribution, type FinancialRepasse, type FinancialRepasseInput } from '../../features/forecasts/forecastsApi';
-import { formatCurrencyDecimal } from '../../lib/formatters';
+import { formatCurrencyDecimal, formatMonthYear } from '../../lib/formatters';
 
 type Props = { month: string; onMonthChange: (month: string) => void };
 type RepasseForm = { name: string; valueType: 'percentage' | 'fixed'; value: string; effectiveFrom: string; effectiveTo: string };
 const emptyForm = (month: string): RepasseForm => ({ name: '', valueType: 'percentage', value: '0', effectiveFrom: month, effectiveTo: '' });
-const formatPeriod = (period: string) => new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(`${period}-15T12:00:00`));
+const formatPeriod = (period: string) => formatMonthYear(period);
 const currentPeriod = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

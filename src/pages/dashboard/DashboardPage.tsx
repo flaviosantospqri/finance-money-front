@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../../components/ui/Icon';
 import { SummaryCards } from '../../components/dashboard/SummaryCards';
 import { cashBookApi, type CashBookSummary } from '../../features/cash-book/cashBookApi';
+import { formatMonthYear } from '../../lib/formatters';
 
 type Props = {
   month: string;
@@ -35,9 +36,7 @@ function sumMoney(values: string[]) {
 }
 
 function periodLabel(period: string) {
-  const [year, month] = period.split('-').map(Number);
-  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
-    .format(new Date(year, month - 1, 1));
+  return formatMonthYear(period);
 }
 
 export function DashboardPage({ month, onOpenCashBook, onOpenClosing }: Props) {

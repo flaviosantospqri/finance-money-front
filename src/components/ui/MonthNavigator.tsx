@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { capitalizeFirst } from '../../lib/formatters';
 
 type Props = {
   value: string;
@@ -12,7 +13,7 @@ type Props = {
 };
 
 const monthNames = Array.from({ length: 12 }, (_, month) =>
-  new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date(2020, month, 1)),
+  capitalizeFirst(new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date(2020, month, 1))),
 );
 const monthShortNames = monthNames.map((name) => name.slice(0, 3));
 const toPeriod = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -37,7 +38,7 @@ export function MonthNavigator({ value, onChange, ariaLabel, min, max, disabled 
   const nextPeriod = shiftPeriod(value, 1);
   const canGoPrevious = !minimum || previousPeriod >= `${minimum.year}-${String(minimum.month + 1).padStart(2, '0')}`;
   const canGoNext = !maximum || nextPeriod <= `${maximum.year}-${String(maximum.month + 1).padStart(2, '0')}`;
-  const label = `${monthNames[current.month].charAt(0).toLocaleUpperCase('pt-BR')}${monthNames[current.month].slice(1)} ${current.year}`;
+  const label = `${monthNames[current.month]} ${current.year}`;
 
   useEffect(() => {
     if (!isOpen) return;

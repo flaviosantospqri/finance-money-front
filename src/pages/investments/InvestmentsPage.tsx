@@ -18,7 +18,7 @@ import {
   type InvestmentMovement,
   type InvestmentSummary,
 } from "../../features/investments/investmentsApi";
-import { formatCurrencyDecimal } from "../../lib/formatters";
+import { formatCurrencyDecimal, formatMonthYear } from "../../lib/formatters";
 
 const today = () => {
   const date = new Date();
@@ -78,10 +78,7 @@ export function InvestmentsPage({ month }: { month: string }) {
       if (!group) {
         group = {
           key,
-          label: new Intl.DateTimeFormat("pt-BR", {
-            month: "long",
-            year: "numeric",
-          }).format(new Date(`${key}-01T12:00:00`)),
+          label: formatMonthYear(key),
           movements: [],
         };
         groups.set(key, group);

@@ -17,7 +17,7 @@ import type {
   FinancialAccount,
   FinancialCategory,
 } from "../../features/cash-book/cashBookApi";
-import { formatCurrencyDecimal } from "../../lib/formatters";
+import { formatCurrencyDecimal, formatMonthYear } from "../../lib/formatters";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { Icon } from "../../components/ui/Icon";
 import { SelectField } from "../../components/ui/SelectField";
@@ -66,12 +66,7 @@ function currentMonth() {
 }
 
 function formatMonth(month: string) {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const label = new Intl.DateTimeFormat("pt-BR", {
-    month: "long",
-    year: "numeric",
-  }).format(new Date(year, monthNumber - 1, 1));
-  return label.charAt(0).toLocaleUpperCase("pt-BR") + label.slice(1);
+  return formatMonthYear(month);
 }
 
 export function CashBookPage() {

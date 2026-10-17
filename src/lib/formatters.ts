@@ -18,3 +18,22 @@ export function formatDate(value: string) {
   const [year, month, day] = value.split('-')
   return `${day}/${month}/${year}`
 }
+
+export function capitalizeFirst(value: string) {
+  return value ? `${value.slice(0, 1).toLocaleUpperCase('pt-BR')}${value.slice(1)}` : value
+}
+
+export function formatMonthYear(value: string) {
+  const [year, month] = value.split('-').map(Number)
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+    .format(new Date(year, month - 1, 1))
+  return capitalizeFirst(label)
+}
+
+export function formatMonthShort(value: string) {
+  const [year, month] = value.split('-').map(Number)
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'short' })
+    .format(new Date(year, month - 1, 1))
+    .replace('.', '')
+  return capitalizeFirst(label)
+}

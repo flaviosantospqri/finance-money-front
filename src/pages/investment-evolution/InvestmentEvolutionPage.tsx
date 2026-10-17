@@ -3,13 +3,13 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import type { FinancialAccount } from "../../features/cash-book/cashBookApi";
 import { investmentEvolutionApi, type InvestmentEvolutionSummary, type MonthlyInvestmentEvolution } from "../../features/investment-evolution/investmentEvolutionApi";
 import type { InvestmentApplication } from "../../features/investments/investmentsApi";
-import { formatCurrencyDecimal } from "../../lib/formatters";
+import { formatCurrencyDecimal, formatMonthShort, formatMonthYear } from "../../lib/formatters";
 import { MonthNavigator } from "../../components/ui/MonthNavigator";
 import { SelectField } from "../../components/ui/SelectField";
 
 const currentYear = new Date().getFullYear();
-const monthLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(new Date(`${value}-15T12:00:00`)).replace(".", "");
-const fullMonthLabel = (value: string) => new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(`${value}-15T12:00:00`));
+const monthLabel = (value: string) => formatMonthShort(value);
+const fullMonthLabel = (value: string) => formatMonthYear(value);
 
 export function InvestmentEvolutionPage() {
   const initialYear = String(currentYear);
