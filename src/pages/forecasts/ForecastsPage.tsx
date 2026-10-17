@@ -103,6 +103,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
+    [copyingMonth, setCopyingMonth] = useState(false),
     [error, setError] = useState(''),
     [reconcileTargets, setReconcileTargets] = useState<string[]>([]),
     [closeReason, setCloseReason] = useState('');
@@ -256,6 +257,29 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       );
     }
   }
+  async function copyPreviousMonth() {
+    const [year, value] = month.split('-').map(Number);
+    const previous = new Date(Date.UTC(year, value - 2, 1));
+    const previousMonth = `${previous.getUTCFullYear()}-${String(previous.getUTCMonth() + 1).padStart(2, '0')}`;
+    setCopyingMonth(true);
+    setError('');
+    try {
+      const result = await forecastsApi.copyMonth(previousMonth, month);
+      if (result.sourceCount === 0) {
+        toast.info('Não há previsões no mês anterior para copiar.');
+      } else if (result.copied === 0) {
+        toast.info('As previsões do mês anterior já estão nesta competência.');
+      } else {
+        const skipped = result.skipped > 0 ? ` ${result.skipped} já existiam e foram ignoradas.` : '';
+        toast.success(`${result.copied} ${result.copied === 1 ? 'previsão copiada' : 'previsões copiadas'} para esta competência.${skipped}`);
+      }
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível copiar as previsões do mês anterior.');
+    } finally {
+      setCopyingMonth(false);
+    }
+  }
   async function openDetails(item: Forecast) {
     setError('');
     try {
@@ -364,6 +388,16 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
   return (
     <main className="page-content forecasts-page">
       <section className="cash-book-toolbar forecasts-toolbar">
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => void copyPreviousMonth()}
+          disabled={copyingMonth || loading}
+          title="Copia as previsões do mês anterior para a competência selecionada. Itens que já existem são ignorados."
+        >
+          <Icon name="copy" size={15} />
+          {copyingMonth ? 'Copiando previsões…' : 'Copiar mês anterior'}
+        </button>
         <button
           className="primary-button"
           onClick={() => setForm({ item: null, scope: 'occurrence' })}

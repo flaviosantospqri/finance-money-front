@@ -157,6 +157,11 @@ export const forecastsApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  copyMonth: (period: string, targetPeriod: string) =>
+    request<{ copied: number; skipped: number; sourceCount: number }>('/financial-forecasts/copy-month', {
+      method: 'POST',
+      body: JSON.stringify({ period, targetPeriod }),
+    }),
   update: (
     id: string,
     data: ForecastUpdateInput,
