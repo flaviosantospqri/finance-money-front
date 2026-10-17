@@ -124,15 +124,17 @@ export function ForecastDetail({
                 <input type="checkbox" checked={selected} onChange={() => onTarget(row.id)} />
                 <span className="forecast-match-check" aria-hidden="true" />
                 <span className="forecast-match-content">
-                  <span className="forecast-match-heading">
-                    {best && <span className="forecast-match-badge">★ Melhor correspondência</span>}
-                    <time>{candidateDate(row.occurredAt)}</time>
-                  </span>
-                  <strong className="forecast-match-description">{row.description}</strong>
-                  <span className="forecast-match-details">
-                    <span className="forecast-match-category">{row.categoryName ?? 'Sem categoria'}</span>
-                    <span className="forecast-match-account">{row.accountName}</span>
+                  <span className="forecast-match-primary">
+                    <strong className="forecast-match-description">
+                      {best && <span className="forecast-match-badge">★ Melhor · </span>}
+                      {row.description}
+                    </strong>
                     <strong className="forecast-match-amount">{formatCurrencyDecimal(row.amount)}</strong>
+                  </span>
+                  <span className="forecast-match-details" title={`${candidateDate(row.occurredAt)} · ${row.categoryName ?? 'Sem categoria'} · ${row.accountName}`}>
+                    <time>{candidateDate(row.occurredAt)}</time>
+                    <span>{row.categoryName ?? 'Sem categoria'}</span>
+                    <span>{row.accountName}</span>
                   </span>
                 </span>
               </label>;
