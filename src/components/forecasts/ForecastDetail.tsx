@@ -40,7 +40,7 @@ export function ForecastDetail({
   const visibleMatches = bestMatch && query && !filteredMatches.some((row) => row.id === bestMatch.id)
     ? [bestMatch, ...filteredMatches]
     : filteredMatches;
-  const candidateLabel = (row: (typeof matches)[number]) => `${row.occurredAt} · ${row.description} · ${row.categoryName ?? 'Sem categoria'} · ${formatCurrencyDecimal(row.amount)} · ${row.accountName}`;
+  const candidateDate = (value: string) => new Intl.DateTimeFormat('pt-BR').format(new Date(`${value}T12:00:00`));
   return (
     <div
       className="drawer-layer"
@@ -122,11 +122,26 @@ export function ForecastDetail({
               const best = row.id === bestMatch?.id;
               return <label className={`forecast-match-option${selected ? ' selected' : ''}${best ? ' best' : ''}`} key={row.id}>
                 <input type="checkbox" checked={selected} onChange={() => onTarget(row.id)} />
-                <span>{best && <strong>★ Melhor correspondência · </strong>}{candidateLabel(row)}</span>
+                <span className="forecast-match-check" aria-hidden="true" />
+                <span className="forecast-match-content">
+                  <span className="forecast-match-heading">
+                    {best && <span className="forecast-match-badge">★ Melhor correspondência</span>}
+                    <time>{candidateDate(row.occurredAt)}</time>
+                  </span>
+                  <strong className="forecast-match-description">{row.description}</strong>
+                  <span className="forecast-match-details">
+                    <span className="forecast-match-category">{row.categoryName ?? 'Sem categoria'}</span>
+                    <span className="forecast-match-account">{row.accountName}</span>
+                    <strong className="forecast-match-amount">{formatCurrencyDecimal(row.amount)}</strong>
+                  </span>
+                </span>
               </label>;
             })}
           </div>
-          <small className="forecast-match-selection">{targets.length === 0 ? 'Nenhum lançamento selecionado' : `${targets.length} lançamento${targets.length === 1 ? '' : 's'} selecionado${targets.length === 1 ? '' : 's'}`}</small>
+          <small className={`forecast-match-selection${targets.length ? ' has-selection' : ''}`}>
+            <span className="forecast-match-selection-count">{targets.length}</span>
+            {targets.length === 0 ? 'Nenhum lançamento selecionado' : `${targets.length} lançamento${targets.length === 1 ? '' : 's'} selecionado${targets.length === 1 ? '' : 's'}`}
+          </small>
           <button
             className="secondary-button"
             disabled={targets.length === 0 || busy}
