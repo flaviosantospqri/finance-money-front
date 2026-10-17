@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Icon } from '../ui/Icon';
 import { SelectField } from '../ui/SelectField';
 import {
@@ -32,6 +33,15 @@ export function ForecastDetail({
   onUnlink: (id: string) => void;
   onCloseForecast: () => void;
 }) {
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const normalizeSearch = (value: string) => value.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const query = normalizeSearch(candidateSearch.trim());
+  const bestMatch = matches[0];
+  const filteredMatches = matches.filter((row) => !query || normalizeSearch(`${row.description} ${row.categoryName ?? ''} ${row.forecastCategoryName} ${row.accountName} ${row.occurredAt} ${row.amount}`).includes(query));
+  const visibleMatches = bestMatch && query && !filteredMatches.some((row) => row.id === bestMatch.id)
+    ? [bestMatch, ...filteredMatches]
+    : filteredMatches;
+  const candidateLabel = (row: (typeof matches)[number]) => `${row.occurredAt} · ${row.description} · ${row.categoryName ?? 'Sem categoria'} · ${formatCurrencyDecimal(row.amount)} · ${row.accountName}`;
   return (
     <div
       className="drawer-layer"
@@ -101,10 +111,13 @@ export function ForecastDetail({
           )}
           <h3>Sugestões do Livro Caixa</h3>
           <p>
-            Candidatos próximos por natureza, valor e data. A conciliação exige
-            sua confirmação.
+            Sugestões priorizadas por nome e categoria, depois por valor e data. A primeira opção é a melhor correspondência; a conciliação exige sua confirmação.
           </p>
-          <SelectField ariaLabel="Movimentação para conciliar" value={target} placeholder="Selecione uma movimentação" options={matches.map((row) => ({ value: row.id, label: `${row.occurredAt} · ${row.description} · ${formatCurrencyDecimal(row.amount)} · ${row.accountName}` }))} onValueChange={onTarget} />
+          <label className="form-field">
+            <span>Filtrar movimentações</span>
+            <input aria-label="Filtrar movimentações do Livro Caixa" placeholder="Digite nome, categoria, conta ou data" value={candidateSearch} onChange={(event) => setCandidateSearch(event.target.value)} />
+          </label>
+          <SelectField ariaLabel="Movimentação para conciliar" value={target} placeholder="Selecione uma movimentação" options={visibleMatches.map((row, index) => ({ value: row.id, label: `${index === 0 && row.id === bestMatch?.id ? '★ Melhor correspondência · ' : ''}${candidateLabel(row)}` }))} onValueChange={onTarget} />
           <button
             className="secondary-button"
             disabled={!target || busy}

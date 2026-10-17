@@ -181,6 +181,10 @@ export const forecastsApi = {
         occurredAt: string;
         type: string;
         accountName: string;
+        categoryName: string | null;
+        forecastCategoryName: string;
+        categoryMatch: boolean;
+        nameMatch: number;
         difference: string;
         daysDifference: number;
       }[]
