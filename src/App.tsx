@@ -185,6 +185,7 @@ function App() {
             month={month}
             onOpenCashBook={() => navigate('cash-book')}
             onOpenClosing={() => navigate('closing')}
+            onOpenInvestments={() => navigate('investment-evolution')}
           />
         )}
         {activePage === 'cash-flow' && (

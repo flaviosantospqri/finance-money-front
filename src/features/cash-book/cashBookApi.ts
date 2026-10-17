@@ -72,6 +72,18 @@ export type CashBookPageResult = {
   period: { month: string; fromDate: string; toDate: string };
 };
 
+export type CashBookAnalytics = {
+  monthly: { month: string; income: string; expenses: string; net: string; debtPayments: string }[];
+  categoryExpenses: {
+    month: string;
+    categoryId: string | null;
+    categoryName: string | null;
+    parentCategoryId: string | null;
+    parentCategoryName: string | null;
+    amount: string;
+  }[];
+};
+
 type ApiErrorResponse = { message?: string | string[] };
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "/api").replace(
@@ -171,6 +183,8 @@ export const cashBookApi = {
     request<CashBookSummary>(
       `/cash-book/summary?${queryString({ accountId, month })}`,
     ),
+  getAnalytics: (fromMonth: string, toMonth: string) =>
+    request<CashBookAnalytics>(`/cash-book/analytics?${queryString({ fromMonth, toMonth })}`),
   createEntry: (input: {
     type: "income" | "expense";
     occurredAt: string;
