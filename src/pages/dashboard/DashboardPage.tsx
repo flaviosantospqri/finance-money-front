@@ -216,8 +216,8 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
     {!loading && !error && hasAccounts && <>
       <section className="dashboard-metrics" aria-label="Indicadores do período">
         <MetricCard label="Receitas do período" value={totals.income} icon="arrow-down" tone="positive" note={periodLabel} />
-        <MetricCard label="Despesas registradas" value={totals.expenses} icon="arrow-up" tone="negative" note={`Livro Caixa · ${periodLabel}`} />
-        <MetricCard label="Resultado do período" value={totals.net} icon="trend" tone={numeric(totals.net) < 0 ? 'negative' : 'positive'} note="Receitas menos despesas registradas" />
+        <MetricCard label="Despesas sem aportes" value={totals.expenses} icon="arrow-up" tone="negative" note={`Livro Caixa · ${periodLabel}`} />
+        <MetricCard label="Resultado do período" value={totals.net} icon="trend" tone={numeric(totals.net) < 0 ? 'negative' : 'positive'} note="Receitas menos despesas; aportes separados" />
         <MetricCard label="Margem líquida" value={`${margin.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`} icon="trend" tone={margin < 0 ? 'negative' : 'positive'} note="Resultado ÷ receitas" format="text" />
         <MetricCard label="Aportes em investimentos" value={totals.contributions} icon="investments" tone="positive" note={periodLabel} />
       </section>
@@ -226,7 +226,7 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
         <header><strong>Comparado ao período anterior</strong><span>{previousPeriodLabel}</span></header>
         <div className="dashboard-comparison-grid">
           <ComparisonItem label="Receitas" current={totals.income} previous={comparison.income} />
-          <ComparisonItem label="Despesas" current={totals.expenses} previous={comparison.expenses} lowerIsBetter />
+          <ComparisonItem label="Despesas sem aportes" current={totals.expenses} previous={comparison.expenses} lowerIsBetter />
           <ComparisonItem label="Resultado" current={totals.net} previous={comparison.net} />
           <ComparisonItem label="Aportes" current={totals.contributions} previous={comparison.contributions} />
         </div>
@@ -240,12 +240,12 @@ export function DashboardPage({ onOpenCashBook, onOpenClosing, onOpenInvestments
       </section>
 
       <section className="dashboard-chart-grid">
-        <ChartPanel title="Receitas, despesas e aportes" subtitle={`Entradas, gastos registrados e valores investidos · ${periodLabel}`} className="dashboard-chart-large">
+        <ChartPanel title="Receitas, despesas e aportes" subtitle={`Entradas, despesas sem aportes e valores investidos · ${periodLabel}`} className="dashboard-chart-large">
           <div className="dashboard-chart-area"><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthlyRows} margin={{ top: 12, right: 12, bottom: 4, left: 8 }}>
             <defs><linearGradient id="dashboardIncomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00a878" stopOpacity={0.24} /><stop offset="95%" stopColor="#00a878" stopOpacity={0.01} /></linearGradient><linearGradient id="dashboardExpenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e6526b" stopOpacity={0.2} /><stop offset="95%" stopColor="#e6526b" stopOpacity={0.01} /></linearGradient></defs>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="4 5" vertical={false} /><XAxis dataKey="month" tickFormatter={formatMonthShort} tick={{ fill: 'var(--text-soft)', fontSize: 11 }} axisLine={{ stroke: 'var(--border)' }} tickLine={false} interval={rangeMonths > 12 ? 1 : 0} /><YAxis tickFormatter={(value) => moneyAxis.format(Number(value))} width={78} tick={{ fill: 'var(--text-soft)', fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip content={<ChartTooltip month />} /><Legend />
             <Area type="monotone" dataKey="incomeValue" name="Receitas" stroke="#00a878" fill="url(#dashboardIncomeFill)" strokeWidth={2.5} activeDot={{ r: 5 }} />
-            <Area type="monotone" dataKey="expenseValue" name="Despesas registradas" stroke="#e6526b" fill="url(#dashboardExpenseFill)" strokeWidth={2.5} activeDot={{ r: 5 }} />
+            <Area type="monotone" dataKey="expenseValue" name="Despesas sem aportes" stroke="#e6526b" fill="url(#dashboardExpenseFill)" strokeWidth={2.5} activeDot={{ r: 5 }} />
             <Line type="monotone" dataKey="contributionValue" name="Aportes em investimentos" stroke="#a3d900" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </AreaChart></ResponsiveContainer></div>
         </ChartPanel>
