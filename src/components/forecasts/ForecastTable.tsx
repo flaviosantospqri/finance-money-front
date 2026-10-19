@@ -17,6 +17,7 @@ export function ForecastTable({
   onEdit,
   onDuplicate,
   onRetain,
+  retainingId,
   onRemove,
 }: {
   title: string;
@@ -28,6 +29,7 @@ export function ForecastTable({
   onEdit: (item: Forecast) => void;
   onDuplicate: (item: Forecast) => void;
   onRetain: (item: Forecast) => void;
+  retainingId: string | null;
   onRemove: (item: Forecast) => void;
 }) {
   const visibleDestinations = distribution.filter(
@@ -259,14 +261,27 @@ export function ForecastTable({
                       >
                         <Icon name="copy" size={15} />
                       </button>
-                      {item.kind === 'expense' && !item.retained && (item.status === 'pending' || item.status === 'overdue') && <button
-                        className="icon-button forecast-retain-action"
-                        title="Reter na fonte: marcar como realizado sem criar uma saída no Livro Caixa; o valor permanece no caixa."
-                        aria-label="Reter na fonte"
-                        onClick={() => onRetain(item)}
-                      >
-                        <Icon name="lock" size={15} />
-                      </button>}
+                      {item.kind === 'expense' && (() => {
+                        const isRetaining = retainingId === item.id;
+                        const isUnavailable = item.retained || item.hasReconciliation || item.closed || item.status === 'cancelled' || (item.status !== 'pending' && item.status !== 'overdue');
+                        const title = item.retained
+                          ? 'Retido na fonte: este lançamento foi marcado como realizado e o valor permaneceu no caixa.'
+                          : item.hasReconciliation
+                            ? 'Este lançamento já possui conciliação e não pode ser retido. Remova as conciliações antes de tentar novamente.'
+                            : item.closed || item.status === 'cancelled'
+                              ? 'Este lançamento está encerrado ou cancelado e não pode ser retido.'
+                              : 'Reter na fonte: marcar como realizado sem criar uma saída no Livro Caixa; o valor permanece no caixa.';
+                        return <button
+                          className={`icon-button forecast-retain-action${item.retained ? ' is-retained' : ''}${item.hasReconciliation || item.closed || item.status === 'cancelled' ? ' is-unavailable' : ''}`}
+                          title={title}
+                          aria-label={title}
+                          aria-busy={isRetaining}
+                          disabled={isUnavailable || isRetaining}
+                          onClick={() => onRetain(item)}
+                        >
+                          {isRetaining ? <span className="loading-spinner" /> : <Icon name={item.hasReconciliation ? 'lock-x' : 'lock'} size={15} />}
+                        </button>;
+                      })()}
                       <button
                         className="icon-button danger-icon"
                         title="Excluir da planilha"

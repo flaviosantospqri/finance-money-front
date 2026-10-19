@@ -30,6 +30,7 @@ export type Forecast = {
   divergence: boolean;
   closed: boolean;
   retained: boolean;
+  hasReconciliation: boolean;
   status: 'pending' | 'partial' | 'realized' | 'overdue' | 'cancelled';
 };
 export type ForecastSummary = {

@@ -109,6 +109,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     [reconcileTargets, setReconcileTargets] = useState<string[]>([]),
     [closeReason, setCloseReason] = useState('');
   const [pendingCancel, setPendingCancel] = useState<Forecast | null>(null);
+  const [retainingId, setRetainingId] = useState<string | null>(null);
   const [copyMonthPreview, setCopyMonthPreview] = useState<CopyMonthPreview | null>(null);
   const [showProjectionBreakdown, setShowProjectionBreakdown] = usePersistentState('fllatech-money-forecasts-projection-breakdown', false);
 
@@ -380,7 +381,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     }
   }
   async function retainForecast(item: Forecast) {
-    setBusy(true);
+    setRetainingId(item.id);
     setError('');
     try {
       await forecastsApi.retain(item.id);
@@ -389,7 +390,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível reter a previsão.');
     } finally {
-      setBusy(false);
+      setRetainingId(null);
     }
   }
   const activeRows = items.filter((item) => item.status !== 'cancelled');
@@ -598,6 +599,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
               onEdit={(item) => setForm({ item, scope: 'occurrence' })}
               onDuplicate={duplicate}
               onRetain={retainForecast}
+              retainingId={retainingId}
               onRemove={setPendingCancel}
             />
           )}
@@ -612,6 +614,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
               onEdit={(item) => setForm({ item, scope: 'occurrence' })}
               onDuplicate={duplicate}
               onRetain={retainForecast}
+              retainingId={retainingId}
               onRemove={setPendingCancel}
             />
           )}
@@ -642,6 +645,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
                 onEdit={(item) => setForm({ item, scope: 'occurrence' })}
                 onDuplicate={duplicate}
                 onRetain={retainForecast}
+                retainingId={retainingId}
                 onRemove={setPendingCancel}
               />
             </>

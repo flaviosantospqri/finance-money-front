@@ -621,6 +621,10 @@ button { color: inherit; }
 .forecast-divergence { display: block; margin-top: 4px; color: var(--red); font-size: 11px; }
 .forecast-row-actions { display: flex; align-items: center; gap: 2px; }
 .forecast-row-actions .danger-icon { color: var(--red); }
+.forecast-row-actions .forecast-retain-action.is-retained { color: var(--red); opacity: 1; }
+.forecast-row-actions .forecast-retain-action.is-unavailable:not(.is-retained) { color: var(--text-faint); opacity: .8; }
+.forecast-row-actions .forecast-retain-action:disabled { cursor: not-allowed; }
+.forecast-row-actions .forecast-retain-action .loading-spinner { width: 14px; height: 14px; border-width: 2px; }
 .forecast-distribution { padding-bottom: 12px; }
 .distribution-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 10px; padding: 0 17px; }
 .distribution-card { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--panel-border); border-radius: 9px; color: var(--text); background: var(--surface-muted); }
