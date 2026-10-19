@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 import { Icon } from '../../components/ui/Icon';
@@ -27,22 +27,10 @@ const normalizedPercentage = (value: string) => {
   const units = percentUnits(value);
   return percentText(units === null ? 0n : units > 10000n ? 10000n : units);
 };
-function refreshFlexibleRow(rows: Distribution[], flexibleId: string | null) {
-  if (!flexibleId) return rows;
-  const flexible = rows.find((row) => row.id === flexibleId && row.valueType === 'percentage');
-  if (!flexible) return rows;
-  const pinnedTotal = rows.reduce((sum, row) => {
-    if (row.valueType !== 'percentage' || row.id === flexibleId) return sum;
-    return sum + (percentUnits(row.value) ?? 0n);
-  }, 0n);
-  const value = percentText(pinnedTotal >= 10000n ? 0n : 10000n - pinnedTotal);
-  return rows.map((row) => row.id === flexibleId ? { ...row, value, percentage: value } : row);
-}
-
 export function RepassesPage({ month, onMonthChange }: Props) {
   const [rows, setRows] = useState<FinancialRepasse[]>([]);
   const [distribution, setDistribution] = useState<Distribution[]>([]);
-  const [flexibleDestinationId, setFlexibleDestinationId] = useState<string | null>(null);
+  const percentageEditBaseline = useRef<{ destinationId: string; value: string } | null>(null);
   const [form, setForm] = useState<RepasseForm>(() => emptyForm(month));
   const [editing, setEditing] = useState<FinancialRepasse | null>(null);
   const [pendingDelete, setPendingDelete] = useState<FinancialRepasse | null>(null);
@@ -73,7 +61,6 @@ export function RepassesPage({ month, onMonthChange }: Props) {
   const loadDistribution = useCallback(async () => {
     setDistributionLoading(true);
     setDistribution([]);
-    setFlexibleDestinationId(null);
     try {
       setDistribution(await forecastsApi.distributions(month));
     } catch (reason) {
@@ -108,25 +95,56 @@ export function RepassesPage({ month, onMonthChange }: Props) {
   }
 
   function updateDistributionPercentage(id: string, rawValue: string) {
-    setDistribution((current) => refreshFlexibleRow(
-      current.map((row) => row.id === id ? { ...row, value: rawValue, percentage: rawValue } : row),
-      flexibleDestinationId,
-    ));
+    setDistribution((current) => current.map((row) => row.id === id ? { ...row, value: rawValue, percentage: rawValue } : row));
   }
 
   function changeDistributionType(id: string, valueType: Distribution['valueType']) {
-    const nextFlexibleId = flexibleDestinationId === id && valueType === 'fixed' ? null : flexibleDestinationId;
-    setFlexibleDestinationId(nextFlexibleId);
-    setDistribution((current) => refreshFlexibleRow(
-      current.map((row) => row.id === id ? { ...row, valueType, value: valueType === 'percentage' ? '0' : row.value, percentage: '0' } : row),
-      nextFlexibleId,
-    ));
+    setDistribution((current) => current.map((row) => row.id === id ? { ...row, valueType, value: valueType === 'percentage' ? '0' : row.value, percentage: '0' } : row));
   }
 
-  function toggleFlexibleDestination(id: string) {
-    const nextFlexibleId = flexibleDestinationId === id ? null : id;
-    setFlexibleDestinationId(nextFlexibleId);
-    if (nextFlexibleId) setDistribution((current) => refreshFlexibleRow(current, nextFlexibleId));
+  function rebalanceEditedPercentage(id: string, rawValue: string) {
+    const nextValue = normalizedPercentage(rawValue);
+    const baseline = percentageEditBaseline.current?.destinationId === id
+      ? percentUnits(percentageEditBaseline.current.value)
+      : null;
+    setError('');
+    const target = distribution.find((row) => row.id === id && row.valueType === 'percentage');
+    const targetBaseline = baseline ?? (target ? percentUnits(target.value) : null);
+    const nextUnits = percentUnits(nextValue);
+    if (!target || targetBaseline === null || nextUnits === null) return;
+    const delta = nextUnits - targetBaseline;
+    const peers = distribution
+      .filter((row) => row.id !== id && row.valueType === 'percentage')
+      .sort((left, right) => {
+        const leftValue = percentUnits(left.value) ?? 0n;
+        const rightValue = percentUnits(right.value) ?? 0n;
+        return leftValue === rightValue ? left.name.localeCompare(right.name, 'pt-BR') : leftValue > rightValue ? -1 : 1;
+      });
+    const largest = peers[0];
+    if (delta !== 0n && !largest) {
+      setError('É necessário haver outra destinação percentual para rebalancear a distribuição.');
+      const originalValue = percentageEditBaseline.current?.value ?? target.value;
+      setDistribution(distribution.map((row) => row.id === id ? { ...row, value: originalValue, percentage: originalValue } : row));
+      percentageEditBaseline.current = null;
+      return;
+    }
+    const largestValue = largest ? percentUnits(largest.value) ?? 0n : 0n;
+    if (delta > largestValue) {
+      const originalValue = percentageEditBaseline.current?.value ?? target.value;
+      setError(`A maior fatia (${largest?.name}) não tem percentual suficiente para este ajuste.`);
+      setDistribution(distribution.map((row) => row.id === id ? { ...row, value: originalValue, percentage: originalValue } : row));
+      percentageEditBaseline.current = null;
+      return;
+    }
+    setDistribution(distribution.map((row) => {
+      if (row.id === id) return { ...row, value: nextValue, percentage: nextValue };
+      if (largest && row.id === largest.id) {
+        const value = percentText(largestValue - delta);
+        return { ...row, value, percentage: value };
+      }
+      return row;
+    }));
+    percentageEditBaseline.current = null;
   }
 
   const percentageTotal = distribution.reduce((sum, row) => {
@@ -135,7 +153,6 @@ export function RepassesPage({ month, onMonthChange }: Props) {
   }, 0n);
   const hasFixedAmounts = distribution.some((row) => row.valueType === 'fixed');
   const distributionIsValid = hasFixedAmounts ? percentageTotal <= 10000n : percentageTotal === 10000n;
-  const distributionUsesGlobalRules = month >= currentPeriod();
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -188,9 +205,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       })));
       setDistribution(saved);
       await load();
-      toast.success(distributionUsesGlobalRules
-        ? `Distribuição salva. As regras globais foram atualizadas a partir de ${formatPeriod(month)}.`
-        : `Distribuição de ${formatPeriod(month)} salva como ajuste histórico.`);
+      toast.success(`Distribuição de ${formatPeriod(month)} salva. Os outros meses foram preservados.`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível salvar a distribuição.');
     } finally {
@@ -228,7 +243,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
       {error && !modalOpen && <div className="cash-book-error" role="alert">{error}</div>}
       <section className="panel repasses-list repasses-unified-list">
         <header className="cash-book-table-heading repasses-rules-heading">
-          <div><h2>Distribuição mensal</h2><p>{distributionUsesGlobalRules ? 'Salvar atualiza as regras a partir deste mês; competências anteriores ficam preservadas.' : 'Este mês permite um ajuste histórico sem alterar as regras atuais.'}</p></div>
+          <div><h2>Distribuição mensal</h2><p>Salvar atualiza somente esta competência. Os percentuais dos outros meses ficam preservados.</p></div>
           <label className="repasses-month-control"><span>Competência</span><MonthNavigator value={month} onChange={onMonthChange} ariaLabel="Competência da distribuição" /></label>
         </header>
         {distributionLoading || loading ? <div className="repasses-empty"><span className="loading-spinner" /> Carregando distribuição…</div> : distribution.length === 0 ? <div className="repasses-empty">Não há destinações para esta competência. Cadastre uma regra para começar.</div> : (
@@ -244,15 +259,12 @@ export function RepassesPage({ month, onMonthChange }: Props) {
                   <td>{formatPeriod(month)}</td>
                   <td><strong>{row.name}</strong></td>
                   <td>
-                    <div className={`repasses-inline-value${flexibleDestinationId === row.id ? ' is-flexible' : ''}`}>
+                    <div className="repasses-inline-value">
                       <SelectField ariaLabel={`Tipo de repasse para ${row.name}`} value={row.valueType} disabled={distributionSaving} onValueChange={(value) => changeDistributionType(row.id, value as Distribution['valueType'])} options={[{ value: 'percentage', label: '%' }, { value: 'fixed', label: 'R$' }]} />
-                      <input aria-label={`Valor do repasse para ${row.name}`} type={row.valueType === 'percentage' ? 'text' : 'number'} inputMode={row.valueType === 'percentage' ? 'decimal' : undefined} min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.valueType === 'percentage' ? row.value.replace('.', ',') : row.value} disabled={distributionSaving || (row.valueType === 'percentage' && flexibleDestinationId === row.id)} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} onBlur={(event) => {
-                        if (row.valueType !== 'percentage' || flexibleDestinationId === row.id) return;
-                        const value = normalizedPercentage(event.target.value);
-                        setDistribution((current) => refreshFlexibleRow(current.map((item) => item.id === row.id ? { ...item, value, percentage: value } : item), flexibleDestinationId));
+                      <input aria-label={`Valor do repasse para ${row.name}`} type={row.valueType === 'percentage' ? 'text' : 'number'} inputMode={row.valueType === 'percentage' ? 'decimal' : undefined} min="0" max={row.valueType === 'percentage' ? '100' : undefined} step="0.01" value={row.valueType === 'percentage' ? row.value.replace('.', ',') : row.value} disabled={distributionSaving} onFocus={() => { percentageEditBaseline.current = { destinationId: row.id, value: row.value }; }} onChange={(event) => row.valueType === 'percentage' ? updateDistributionPercentage(row.id, event.target.value) : setDistribution((current) => current.map((item) => item.id === row.id ? { ...item, value: event.target.value, percentage: '0' } : item))} onBlur={(event) => {
+                        if (row.valueType === 'percentage') rebalanceEditedPercentage(row.id, event.target.value);
                       }} />
                       <span>{row.valueType === 'percentage' ? '%' : 'R$'}</span>
-                      {row.valueType === 'percentage' && <button type="button" className={`distribution-pin-button${flexibleDestinationId === row.id ? ' is-unpinned' : ''}`} aria-label={flexibleDestinationId === row.id ? `Fixar valor de ${row.name}` : `Desafixar ${row.name}; será o único percentual ajustado`} aria-pressed={flexibleDestinationId !== row.id} onClick={() => toggleFlexibleDestination(row.id)} disabled={distributionSaving} title={flexibleDestinationId === row.id ? 'Fixar este percentual' : 'Desafixar: este será o único percentual ajustado'}><Icon name={flexibleDestinationId === row.id ? 'unlock' : 'lock'} size={13} /></button>}
                     </div>
                   </td>
                   <td className="repasses-money-cell">{formatCurrencyDecimal(row.budget)}</td>
@@ -269,7 +281,7 @@ export function RepassesPage({ month, onMonthChange }: Props) {
           </div>
         )}
         {!distributionLoading && distribution.length > 0 && <footer className="repasses-unified-footer">
-          <div className="distribution-total-status"><strong className={distributionIsValid ? '' : 'is-invalid'}>Total percentual: {percentText(percentageTotal)}%</strong><small>{flexibleDestinationId ? `${distribution.find((row) => row.id === flexibleDestinationId)?.name} ajusta para fechar o total.` : 'Todos os valores estão fixos.'}</small></div>
+          <div className="distribution-total-status"><strong className={distributionIsValid ? '' : 'is-invalid'}>Total percentual: {percentText(percentageTotal)}%</strong><small>A maior outra fatia é ajustada automaticamente para manter o total.</small></div>
           <div><button className="secondary-button" onClick={() => void copyDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>Copiar para o próximo mês</button><button className="primary-button" onClick={() => void saveDistribution()} disabled={distributionSaving || distributionLoading || !distributionIsValid}>{distributionSaving ? 'Salvando…' : 'Salvar distribuição'}</button></div>
         </footer>}
       </section>
