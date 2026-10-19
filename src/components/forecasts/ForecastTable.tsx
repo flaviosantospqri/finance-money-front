@@ -16,6 +16,7 @@ export function ForecastTable({
   onView,
   onEdit,
   onDuplicate,
+  onRetain,
   onRemove,
 }: {
   title: string;
@@ -26,6 +27,7 @@ export function ForecastTable({
   onView: (item: Forecast) => void;
   onEdit: (item: Forecast) => void;
   onDuplicate: (item: Forecast) => void;
+  onRetain: (item: Forecast) => void;
   onRemove: (item: Forecast) => void;
 }) {
   const visibleDestinations = distribution.filter(
@@ -257,6 +259,14 @@ export function ForecastTable({
                       >
                         <Icon name="copy" size={15} />
                       </button>
+                      {item.kind === 'expense' && !item.retained && (item.status === 'pending' || item.status === 'overdue') && <button
+                        className="icon-button forecast-retain-action"
+                        title="Reter na fonte: marcar como realizado sem criar uma saída no Livro Caixa; o valor permanece no caixa."
+                        aria-label="Reter na fonte"
+                        onClick={() => onRetain(item)}
+                      >
+                        <Icon name="lock" size={15} />
+                      </button>}
                       <button
                         className="icon-button danger-icon"
                         title="Excluir da planilha"

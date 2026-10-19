@@ -29,6 +29,7 @@ export type Forecast = {
   realizedAt: string | null;
   divergence: boolean;
   closed: boolean;
+  retained: boolean;
   status: 'pending' | 'partial' | 'realized' | 'overdue' | 'cancelled';
 };
 export type ForecastSummary = {
@@ -207,6 +208,10 @@ export const forecastsApi = {
     request(`/financial-forecasts/${id}/close`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
+    }),
+  retain: (id: string) =>
+    request<{ retained: boolean }>(`/financial-forecasts/${id}/retain`, {
+      method: 'POST',
     }),
   destinations: () =>
     request<Destination[]>('/financial-forecasts/destinations'),

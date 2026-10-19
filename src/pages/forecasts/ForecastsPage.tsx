@@ -379,6 +379,19 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
       );
     }
   }
+  async function retainForecast(item: Forecast) {
+    setBusy(true);
+    setError('');
+    try {
+      await forecastsApi.retain(item.id);
+      toast.success('Previsão retida na fonte e marcada como realizada.');
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível reter a previsão.');
+    } finally {
+      setBusy(false);
+    }
+  }
   const activeRows = items.filter((item) => item.status !== 'cancelled');
   const activeIncomeRows = activeRows.filter((item) => item.kind === 'income');
   const activeExpenseRows = activeRows.filter((item) => item.kind === 'expense');
@@ -584,6 +597,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
               onView={openDetails}
               onEdit={(item) => setForm({ item, scope: 'occurrence' })}
               onDuplicate={duplicate}
+              onRetain={retainForecast}
               onRemove={setPendingCancel}
             />
           )}
@@ -597,6 +611,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
               onView={openDetails}
               onEdit={(item) => setForm({ item, scope: 'occurrence' })}
               onDuplicate={duplicate}
+              onRetain={retainForecast}
               onRemove={setPendingCancel}
             />
           )}
@@ -626,6 +641,7 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
                 onView={openDetails}
                 onEdit={(item) => setForm({ item, scope: 'occurrence' })}
                 onDuplicate={duplicate}
+                onRetain={retainForecast}
                 onRemove={setPendingCancel}
               />
             </>
