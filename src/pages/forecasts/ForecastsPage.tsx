@@ -178,6 +178,8 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
           {
             description: input.description,
             amount: input.amount,
+            amountType: input.amountType,
+            percentage: input.percentage,
             dueDate: input.dueDate,
             categoryId: input.categoryId,
             accountId: input.accountId,

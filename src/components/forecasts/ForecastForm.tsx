@@ -65,9 +65,9 @@ export function ForecastForm({
       !description.trim() ||
       !categoryId ||
       (amountType === 'fixed' && (!/^\d{1,12}(\.\d{1,2})?$/.test(normalized) || !/[1-9]/.test(normalized))) ||
-      (amountType === 'income_percentage' && (!/^\d{1,3}(\.\d{1,2})?$/.test(normalizedPercentage) || Number(normalizedPercentage) <= 0 || Number(normalizedPercentage) > 100))
+      (amountType === 'income_percentage' && (!/^\d{1,3}(\.\d{1,2})?$/.test(normalizedPercentage) || Number(normalizedPercentage) < 0 || Number(normalizedPercentage) > 100))
     ) {
-      setError('Informe descrição, valor positivo e categoria válida.');
+      setError('Informe descrição, valor válido e categoria válida.');
       return;
     }
     await onSave(
