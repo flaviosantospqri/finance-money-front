@@ -263,23 +263,23 @@ export function ForecastTable({
                       </button>
                       {item.kind === 'expense' && (() => {
                         const isRetaining = retainingId === item.id;
-                        const isUnavailable = item.retained || item.hasReconciliation || item.closed || item.status === 'cancelled' || (item.status !== 'pending' && item.status !== 'overdue');
+                        const isUnavailable = !item.retained && (item.hasReconciliation || item.closed || item.status === 'cancelled' || (item.status !== 'pending' && item.status !== 'overdue'));
                         const title = item.retained
-                          ? 'Retido na fonte: este lançamento foi marcado como realizado e o valor permaneceu no caixa.'
+                          ? 'Desfazer retenção: a previsão voltará a contar como despesa pendente ou atrasada.'
                           : item.hasReconciliation
                             ? 'Este lançamento já possui conciliação e não pode ser retido. Remova as conciliações antes de tentar novamente.'
                             : item.closed || item.status === 'cancelled'
                               ? 'Este lançamento está encerrado ou cancelado e não pode ser retido.'
                               : 'Reter na fonte: marcar como realizado sem criar uma saída no Livro Caixa; o valor permanece no caixa.';
                         return <button
-                          className={`icon-button forecast-retain-action${item.retained ? ' is-retained' : ''}${item.hasReconciliation || item.closed || item.status === 'cancelled' ? ' is-unavailable' : ''}`}
+                          className={`icon-button forecast-retain-action${item.retained ? ' is-retained' : ''}${!item.retained && (item.hasReconciliation || item.closed || item.status === 'cancelled') ? ' is-unavailable' : ''}`}
                           title={title}
                           aria-label={title}
                           aria-busy={isRetaining}
                           disabled={isUnavailable || isRetaining}
                           onClick={() => onRetain(item)}
                         >
-                          {isRetaining ? <span className="loading-spinner" /> : <Icon name={item.hasReconciliation ? 'lock-x' : 'lock'} size={15} />}
+                          {isRetaining ? <span className="loading-spinner" /> : <Icon name={item.retained ? 'unlock' : item.hasReconciliation ? 'lock-x' : 'lock'} size={15} />}
                         </button>;
                       })()}
                       <button

@@ -214,6 +214,10 @@ export const forecastsApi = {
     request<{ retained: boolean }>(`/financial-forecasts/${id}/retain`, {
       method: 'POST',
     }),
+  unretain: (id: string) =>
+    request<{ retained: boolean }>(`/financial-forecasts/${id}/unretain`, {
+      method: 'POST',
+    }),
   destinations: () =>
     request<Destination[]>('/financial-forecasts/destinations'),
   createDestination: (name: string) =>

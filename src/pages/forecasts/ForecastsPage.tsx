@@ -384,8 +384,13 @@ export function ForecastsPage({ month, onManageRepasses }: Props) {
     setRetainingId(item.id);
     setError('');
     try {
-      await forecastsApi.retain(item.id);
-      toast.success('Previsão retida na fonte e marcada como realizada.');
+      if (item.retained) {
+        await forecastsApi.unretain(item.id);
+        toast.success('Retenção desfeita. A previsão voltou a contar como despesa pendente.');
+      } else {
+        await forecastsApi.retain(item.id);
+        toast.success('Previsão retida na fonte e marcada como realizada.');
+      }
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível reter a previsão.');
