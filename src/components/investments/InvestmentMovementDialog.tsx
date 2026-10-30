@@ -77,7 +77,8 @@ export function InvestmentMovementDialog({
           <fieldset disabled={saving}>
             <label className="form-field">
               <span>Tipo</span>
-              <SelectField ariaLabel="Tipo de movimentação" value={draft.type} disabled={Boolean(editing)} onValueChange={(value) => onChange({ ...draft, type: value as InvestmentMovementDraft['type'] })} options={[{ value: 'contribution', label: 'Aporte' }, { value: 'withdrawal', label: 'Resgate' }, { value: 'refund', label: 'Devolução' }, { value: 'income', label: 'Rendimento' }, { value: 'adjustment', label: 'Ajuste justificado' }]} />
+              <SelectField ariaLabel="Tipo de movimentação" value={draft.type} disabled={Boolean(editing?.transferId)} onValueChange={(value) => onChange({ ...draft, type: value as InvestmentMovementDraft['type'] })} options={[{ value: 'contribution', label: 'Aporte' }, { value: 'withdrawal', label: 'Resgate' }, { value: 'refund', label: 'Devolução' }, { value: 'income', label: 'Rendimento' }, { value: 'adjustment', label: 'Ajuste justificado' }]} />
+              {editing?.transferId && <small className="investment-form-hint">O tipo de uma movimentação vinculada a transferência entre aplicações não pode ser alterado.</small>}
             </label>
             <label className="form-field">
               <span>Data da movimentação</span>
