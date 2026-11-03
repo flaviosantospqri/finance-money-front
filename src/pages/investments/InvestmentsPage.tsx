@@ -41,7 +41,6 @@ const conciseAccountInstitution = (accountName: string, institution: string | nu
 };
 const signedValue = (movement: InvestmentMovement) =>
   movement.type === "withdrawal" ||
-  movement.type === "refund" ||
   (movement.type === "adjustment" && movement.amount.startsWith("-"))
     ? `- ${formatCurrencyDecimal(movement.amount.replace("-", ""))}`
     : `+ ${formatCurrencyDecimal(movement.amount)}`;
